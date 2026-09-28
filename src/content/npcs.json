@@ -1,0 +1,127 @@
+[
+  {
+    "id": "npc_bead_artisan",
+    "kingdom": "lothal",
+    "zoneId": "zone_bead_factory",
+    "name": {
+      "en": "Somendra the Lapidary",
+      "hi": "सोमेंद्र (मनका शिल्पी)"
+    },
+    "role": {
+      "en": "Master Artisan of the Lothal Bead Kiln",
+      "hi": "लोथल मनका भट्टी के प्रधान शिल्पकार"
+    },
+    "avatar": "🏺",
+    "isometricPos": { "x": 480, "y": 180 },
+    "introDialogue": {
+      "en": [
+        "Welcome, young traveller! Step carefully—our underground kiln pipes are glowing.",
+        "Here in Lothal, we take dull raw stones from the Narmada riverbeds and transform them into gleaming red carnelian beads prized from here to Mesopotamia!",
+        "Could you help me at the bow-drill? Drill true, and I will share raw beads you can barter for food at the wharf."
+      ],
+      "hi": [
+        "नमस्ते युवा यात्री! संभलकर चलें—हमारी भूमिगत भट्टियाँ दहक रही हैं।",
+        "यहाँ लोथल में हम नर्मदा घाटी से आए साधारण पत्थरों को तपाकर चमकदार लाल अकीक बनाते हैं, जिनकी माँग मेसोपोटामिया तक है!",
+        "क्या आप ड्रिल चलाने में मेरी सहायता करेंगे? मनके तराशिए, और मैं आपको अन्न विनिमय के लिए मनके दूंगा।"
+      ]
+    },
+    "checkpointQuestionId": "q_carnelian_color",
+    "barterTrades": [],
+    "isMiniGameChampion": true,
+    "miniGameId": "bead_driller"
+  },
+  {
+    "id": "npc_dock_master",
+    "kingdom": "lothal",
+    "zoneId": "zone_dock",
+    "name": {
+      "en": "Marak the Dockmaster",
+      "hi": "मारक (गोदी प्रबंधक)"
+    },
+    "role": {
+      "en": "Harbour Scribe & Tidal Basin Superintendent",
+      "hi": "बंदरगाह अधीक्षक एवं नाविक मार्गदर्शक"
+    },
+    "avatar": "⚓",
+    "isometricPos": { "x": 180, "y": 280 },
+    "introDialogue": {
+      "en": [
+        "Ahoy, Yatri! Look at that massive brick basin—over 210 metres long! No other civilisation has engineered a tidal dock like this.",
+        "When the Arabian Sea tide rushes into the Bhogavo river, our sluice gates trap the water so heavy seafaring dhows can float safely at low tide.",
+        "Our sailors are hungry after the Gulf voyage. If you bring me drilled carnelian beads or help dock the incoming ship, I will trade you freshly baked barley cakes and salted fish!"
+      ],
+      "hi": [
+        "अहो यात्री! इस विशाल पक्की ईंटों के गोदीवाड़े को देखिए—२१० मीटर से भी लंबा! विश्व में ऐसा ज्वारीय गोदीवाड़ा कहीं और नहीं है।",
+        "जब अरब सागर का ज्वार भोगावो नदी में चढ़ता है, तो हमारे स्लुइस गेट पानी रोक लेते हैं ताकि भाटा आने पर भी भारी जहाज तैरते रहें।",
+        "खाड़ी से लौटे नाविकों को भोजन चाहिए। यदि आप तराशे हुए मनके लाएं या जहाज को गोदी में लगाने में मदद करें, तो मैं आपको ताज़ा जौ की रोटी और भुनी मछली दूंगा!"
+      ]
+    },
+    "checkpointQuestionId": "q_tidal_dock",
+    "barterTrades": [
+      {
+        "giveItemId": "carnelian_beads",
+        "giveAmount": 2,
+        "receiveItemId": "barley_cake",
+        "receiveAmount": 1,
+        "dialogue": {
+          "en": "Magnificent bead lustre! Here is a nourishing Harappan steamed barley cake. Eat it to restore your Urja.",
+          "hi": "अद्भुत चमक है इन मनकों की! यह लीजिए सुस्वादु जौ की रोटी। इसे खाकर अपनी ऊर्जा बढ़ाएं।"
+        }
+      },
+      {
+        "giveItemId": "carnelian_beads",
+        "giveAmount": 3,
+        "receiveItemId": "roasted_fish",
+        "receiveAmount": 1,
+        "dialogue": {
+          "en": "High quality carnelian! The Gulf merchants will pay double. Take this freshly roasted coastal fish!",
+          "hi": "उत्कृष्ट गुणवत्ता! खाड़ी के व्यापारी इसका दुगना मूल्य देंगे। यह भुनी हुई स्वादिष्ट मछली लीजिए!"
+        }
+      }
+    ],
+    "isMiniGameChampion": true,
+    "miniGameId": "tide_dock"
+  },
+  {
+    "id": "npc_warehouse_keeper",
+    "kingdom": "lothal",
+    "zoneId": "zone_warehouse",
+    "name": {
+      "en": "Revati the Granary Custodian",
+      "hi": "रेवती (अन्नागार संरक्षक)"
+    },
+    "role": {
+      "en": "Acro-Granary Overseer & Seal Registrar",
+      "hi": "अन्नागार एवं मुहर अभिलेखागार प्रमुख"
+    },
+    "avatar": "📜",
+    "isometricPos": { "x": 340, "y": 420 },
+    "introDialogue": {
+      "en": [
+        "Welcome up to the acropolis platform! We built our warehouse high on this 4-metre mud-brick podium so seasonal floods never ruin the city's harvest.",
+        "Every bale of cotton and jar of oil leaving Lothal is bound with wet clay and stamped with our animal seals.",
+        "Test your memory matching our trade seals! A sharp archivist keeps the kingdom prosperous."
+      ],
+      "hi": [
+        "ऊँचे नगर चबूतरे पर आपका स्वागत है! हमने यह गोदाम ४ मीटर ऊँचे चबूतरे पर बनाया है ताकि मौसमी बाढ़ अन्न को हानि न पहुँचा सके।",
+        "यहाँ से जाने वाली हर वस्तु पर गीली मिट्टी लगाकर हमारी पशु मुहरों से सील किया जाता है।",
+        "हमारी व्यापारिक मुहरों की पहचान में अपनी स्मृति का परीक्षण करें! कुशल अभिलेखाकार ही नगर की समृद्धि बनाए रखते हैं।"
+      ]
+    },
+    "checkpointQuestionId": "q_seals_purpose",
+    "barterTrades": [
+      {
+        "giveItemId": "carnelian_beads",
+        "giveAmount": 1,
+        "receiveItemId": "jujube_dates",
+        "receiveAmount": 2,
+        "dialogue": {
+          "en": "Sweet dried wild jujube berries from the Saurashtra scrub. A quick boost of energy for your travels!",
+          "hi": "सौराष्ट्र के मीठे सूखे बेर! आपकी यात्रा के लिए तुरंत ऊर्जा देने वाला उत्तम आहार।"
+        }
+      }
+    ],
+    "isMiniGameChampion": true,
+    "miniGameId": "seal_match"
+  }
+]

@@ -1,0 +1,106 @@
+[
+  {
+    "id": "barley_cake",
+    "kingdom": "lothal",
+    "name": {
+      "en": "Steamed Harappan Barley Cake",
+      "hi": "हड़प्पा जौ की पकी रोटी"
+    },
+    "emoji": "🫓",
+    "urjaRestore": 35,
+    "barterCost": {
+      "itemId": "carnelian_beads",
+      "amount": 2
+    },
+    "foodFact": {
+      "title": {
+        "en": "Ancient Grains of the Indus",
+        "hi": "सिंधु घाटी का प्राचीन अन्न"
+      },
+      "description": {
+        "en": "Excavations at Lothal yielded charred grains of six-row barley (Hordeum vulgare) and emmer wheat. Ground on saddle querns and steamed in clay platters, barley gave workers lasting stamina in the saline coastal climate.",
+        "hi": "लोथल की खुदाई में छह-पंक्ति वाले जौ और गेहूं के जले हुए दाने मिले हैं। सिल-बट्टे पर पीसकर मिट्टी के बर्तनों में पकाई गई जौ की रोटियाँ तटीय जलवायु में भारी शारीरिक श्रम के लिए शक्ति देती थीं।"
+      },
+      "source": "Archaeological Survey of India (ASI) Lothal Excavations (S.R. Rao)",
+      "status": "VERIFIED"
+    }
+  },
+  {
+    "id": "roasted_fish",
+    "kingdom": "lothal",
+    "name": {
+      "en": "Roasted Coastal Fish",
+      "hi": "तटीय भुनी मछली"
+    },
+    "emoji": "🐟",
+    "urjaRestore": 45,
+    "barterCost": {
+      "itemId": "carnelian_beads",
+      "amount": 3
+    },
+    "foodFact": {
+      "title": {
+        "en": "Harappan Maritime Harvest",
+        "hi": "हड़प्पाकालीन समुद्री आहार"
+      },
+      "description": {
+        "en": "Archaeologists uncovered numerous copper and bronze fish-hooks, terracotta net sinkers, and marine fish bones at Lothal, proving that dock workers and mariners relied heavily on fish roasted over earthen open hearths.",
+        "hi": "लोथल में तांबे और कांसे के मछली पकड़ने वाले कांटे, मिट्टी के जाल-भारक और मछलियों की हड्डियाँ मिली हैं, जिससे स्पष्ट होता है कि गोदी के नाविक और कारीगर भुनी मछली का दैनिक सेवन करते थे।"
+      },
+      "source": "ASI Lothal Volume II: Maritime Artifacts and Faunal Remains",
+      "status": "VERIFIED"
+    }
+  },
+  {
+    "id": "jujube_dates",
+    "kingdom": "lothal",
+    "name": {
+      "en": "Dried Saurashtra Ber (Jujube)",
+      "hi": "सौराष्ट्र के सूखे बेर"
+    },
+    "emoji": "🫐",
+    "urjaRestore": 20,
+    "barterCost": {
+      "itemId": "carnelian_beads",
+      "amount": 1
+    },
+    "foodFact": {
+      "title": {
+        "en": "Nature's Preserved Energy Rations",
+        "hi": "प्रकृति का सुरक्षित यात्रा आहार"
+      },
+      "description": {
+        "en": "Charred stones of wild jujube (Ziziphus mauritiana) were recovered in abundance across Lothal's kitchen strata. Rich in vitamin C and natural sugars, dried ber provided rapid vitality on long sea journeys.",
+        "hi": "लोथल के रसोई क्षेत्रों से जंगली बेर की प्रचुर गुठलियाँ मिली हैं। विटामिन सी और प्राकृतिक शर्करा से भरपूर सूखे बेर लम्बी समुद्री यात्राओं में तुरंत स्फूर्ति देते थे।"
+      },
+      "source": "Paleobotanical Studies of Harappan Settlements (Saraswat & Pokharia)",
+      "status": "VERIFIED"
+    }
+  },
+  {
+    "id": "lentil_mash",
+    "kingdom": "lothal",
+    "name": {
+      "en": "Clay-Pot Stewed Lentil Mash",
+      "hi": "मृद्भांड में पकी दाल"
+    },
+    "emoji": "🥣",
+    "urjaRestore": 30,
+    "barterCost": {
+      "itemId": "carnelian_beads",
+      "amount": 2
+    },
+    "foodFact": {
+      "title": {
+        "en": "Pulse Cultivation in Gujarat",
+        "hi": "प्राचीन गुजरात में दालों की खेती"
+      },
+      "description": {
+        "en": "Lothal was one of the earliest Indian sites to preserve evidence of indigenous pulse cultivation—including horsegram and green gram, simmered with wild mustard seeds in perforated pottery vessels.",
+        "hi": "लोथल भारत के उन प्राचीन स्थलों में से है जहाँ कुलथी और मूंग जैसी दालों की खेती के साक्ष्य मिले हैं, जिन्हें मिट्टी के हांडियों में पकाया जाता था।"
+      },
+      "source": "Ancient Indian Diet and Agriculture (ICAR & ASI)",
+      "status": "VERIFIED"
+    }
+  }
+]

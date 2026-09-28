@@ -1,0 +1,159 @@
+[
+  {
+    "id": "toy_terracotta_bull",
+    "kingdom": "lothal",
+    "name": {
+      "en": "Lothal Terracotta Wheeled Bull & Cart",
+      "hi": "लोथल पहियों वाला पकी मिट्टी का नंदी खिलौना"
+    },
+    "craftOrigin": "Indus Valley Kiln Craft (Gujarat)",
+    "approximateDate": "c. 2200 – 1900 BCE",
+    "historicalContext": {
+      "en": "Excavated at Lothal and Mohenjo-daro, these terracotta animals with transverse axle holes were some of the world's earliest mechanical wheeled toys! Indus children pulled them with strings through the paved brick alleys, learning physics, mechanics, and livestock transport before they were grown.",
+      "hi": "लोथल और मोहनजोदड़ो से प्राप्त पकी मिट्टी के ये खिलौने, जिनके धुरी में पहिए लगे थे, विश्व के सबसे प्राचीन यांत्रिक खिलौनों में से हैं! बच्चे इन्हें धागे से खींचकर खेलते थे, जिससे वे बचपन में ही पहिए के विज्ञान और माल ढुलाई की समझ विकसित करते थे।"
+    },
+    "phygitalConnection": {
+      "en": "From Lothal's 4,000-year-old terracotta wheels to the GI-tagged wooden toys of Channapatna: India has a continuous 4,000-year unbroken tradition of eco-friendly, non-toxic handmade moving toys crafted from natural earth and natural vegetable dyes!",
+      "hi": "लोथल के ४००० वर्ष पुराने मिट्टी के पहियों से लेकर कर्नाटक के चन्नापटना के जीआई-टैग प्राप्त लकड़ी के खिलौनों तक: भारत में प्राकृतिक मिट्टी, लकड़ी और वनस्पति रंगों से खिलौने बनाने की अटूट परंपरा रही है!"
+    },
+    "diyTemplate": {
+      "title": {
+        "en": "Channapatna 'Lattu' (Spinning Top) & Harappan Rolling Bull Craft",
+        "hi": "चन्नापटना लट्टू और हड़प्पा पहिएदार नंदी DIY शिल्प"
+      },
+      "craftType": "GI Craft Paper-Wood & Clay Prototype",
+      "materials": [
+        "Cardboard / Cardstock paper",
+        "Wooden toothpick or thin bamboo skewer (central axle)",
+        "Two plastic bottle caps or cardboard discs (wheels)",
+        "Natural clay / dough for the bull torso",
+        "Turmeric, beetroot juice, or lac-red paint for authentic eco-colors"
+      ],
+      "instructions": [
+        "1. Print or trace the template cutout circles for the top & wheeled bull body.",
+        "2. Shape the terracotta bull torso from clay, inserting a straw through the base for the axle.",
+        "3. Mount the wheel discs onto the skewer through the straw axle so it rolls freely.",
+        "4. For the Channapatna top, stack concentric cardboard discs tightly on a pencil/toothpick.",
+        "5. Paint concentric rings using turmeric yellow and lac red, and give it your first spin!"
+      ],
+      "printableLayoutType": "cutout_top"
+    },
+    "status": "VERIFIED"
+  },
+  {
+    "id": "toy_maurya_cart",
+    "kingdom": "maurya",
+    "name": {
+      "en": "Mauryan Painted Toy Chariot",
+      "hi": "मौर्य कालीन खिलौना रथ"
+    },
+    "craftOrigin": "Magadha Terracotta & Woodcraft",
+    "approximateDate": "c. 3rd Century BCE",
+    "historicalContext": {
+      "en": "Detailed terracotta plaques from Bulandi Bagh (Pataliputra) depict children playing with miniature two-wheeled royal chariots and horses. [VERIFY]",
+      "hi": "बुलंदी बाग से प्राप्त मिट्टी के फलकों में बच्चे दो पहियों वाले छोटे शाही रथों से खेलते दिखाई देते हैं। [VERIFY]"
+    },
+    "phygitalConnection": {
+      "en": "Connects to Varanasi wooden lacquered toy chariots. [VERIFY]",
+      "hi": "वाराणसी के लकड़ी के लैकर्ड खिलौना रथों से जुड़ाव। [VERIFY]"
+    },
+    "diyTemplate": {
+      "title": {
+        "en": "Pataliputra Chariot Cutout",
+        "hi": "पाटलिपुत्र रथ कटआउट"
+      },
+      "craftType": "Papercraft Chariot",
+      "materials": ["Cardstock", "Toothpicks", "Brass brads"],
+      "instructions": ["Fold along dashed lines", "Attach toothpick axles"],
+      "printableLayoutType": "origami_bull"
+    },
+    "status": "VERIFY"
+  },
+  {
+    "id": "toy_chola_dancer",
+    "kingdom": "chola",
+    "name": {
+      "en": "Thanjavur Bobblehead (Thanjavur Thalaiyatti Bommai)",
+      "hi": "तंजावुर डोलती गुड़िया (थलाइयट्टी बोम्मई)"
+    },
+    "craftOrigin": "Thanjavur, Tamil Nadu (GI-Tagged)",
+    "approximateDate": "c. 11th Century CE / Traditional Living Craft",
+    "historicalContext": {
+      "en": "The iconic self-righting roly-poly doll with a low centre of gravity made of terracotta, paper pulp, and clay, always returning upright when pushed. [VERIFY]",
+      "hi": "संतुलन के भौतिक विज्ञान पर आधारित प्रसिद्ध थलाइयट्टी गुड़िया जो धक्का देने पर भी कभी नहीं गिरती। [VERIFY]"
+    },
+    "phygitalConnection": {
+      "en": "Celebrates ancient physics in toy engineering. [VERIFY]",
+      "hi": "खिलौना इंजीनियरिंग में प्राचीन भौतिक विज्ञान का उत्सव। [VERIFY]"
+    },
+    "diyTemplate": {
+      "title": {
+        "en": "Balance Bobblehead Template",
+        "hi": "संतुलन गुड़िया टेम्पलेट"
+      },
+      "craftType": "Roly-Poly Physics Toy",
+      "materials": ["Half tennis ball", "Clay weight", "Cardstock upper cone"],
+      "instructions": ["Fix weight in lower dome", "Assemble upper cone"],
+      "printableLayoutType": "cutout_top"
+    },
+    "status": "VERIFY"
+  },
+  {
+    "id": "toy_kinhal_doll",
+    "kingdom": "vijayanagara",
+    "name": {
+      "en": "Kinhal Carved Wooden Figure",
+      "hi": "किन्हाळ काष्ठ मूर्ति खिलौना"
+    },
+    "craftOrigin": "Kinhal, Koppal district, Karnataka (GI-Tagged)",
+    "approximateDate": "c. 15th Century CE",
+    "historicalContext": {
+      "en": "Master woodcarvers supported by Vijayanagara kings created lightweight painted toys using soft wood and tamarind-seed paste (Kitta). [VERIFY]",
+      "hi": "विजयनगर नरेशों द्वारा संपोषित किन्हाळ के शिल्पी इमली के बीज के लेप और हल्की लकड़ी से खिलौने बनाते थे। [VERIFY]"
+    },
+    "phygitalConnection": {
+      "en": "One of India's oldest surviving woodcarver guilds. [VERIFY]",
+      "hi": "भारत की प्राचीनतम जीवित काष्ठ शिल्पी परंपरा। [VERIFY]"
+    },
+    "diyTemplate": {
+      "title": {
+        "en": "Kinhal Puppet Cutout",
+        "hi": "किन्हाळ कठपुतली कटआउट"
+      },
+      "craftType": "Hinged Joint Puppet",
+      "materials": ["Cardboard", "Split pins", "Colored pencils"],
+      "instructions": ["Cut limbs", "Fasten pins at joints"],
+      "printableLayoutType": "cutout_top"
+    },
+    "status": "VERIFY"
+  },
+  {
+    "id": "toy_wooden_horse",
+    "kingdom": "solanki",
+    "name": {
+      "en": "Idar Lacquered Wooden Horse",
+      "hi": "ईडर लैकर्ड काष्ठ अश्व"
+    },
+    "craftOrigin": "Idar, North Gujarat",
+    "approximateDate": "c. Medieval Gujarat / Traditional Living Craft",
+    "historicalContext": {
+      "en": "Turned on traditional hand lathes using Wrightia tinctoria (Ivory wood) and lac resin colors, depicting gallant cavalry mounts. [VERIFY]",
+      "hi": "हाथ की खराद पर प्राकृतिक लाख के रंगों से रंगे जाने वाले सुंदर काष्ठ अश्व। [VERIFY]"
+    },
+    "phygitalConnection": {
+      "en": "Celebrates tree-safe, non-toxic woodcraft. [VERIFY]",
+      "hi": "पर्यावरण के अनुकूल, विषरहित खिलौना परंपरा। [VERIFY]"
+    },
+    "diyTemplate": {
+      "title": {
+        "en": "Rolling Trojan Horse Template",
+        "hi": "पहियों वाला घोड़ा टेम्पलेट"
+      },
+      "craftType": "Wooden Toy Assembly",
+      "materials": ["Plywood / Cardboard", "Straws", "Corks"],
+      "instructions": ["Assemble horse frame", "Insert wheel axle"],
+      "printableLayoutType": "origami_bull"
+    },
+    "status": "VERIFY"
+  }
+]

@@ -1,0 +1,265 @@
+[
+  {
+    "id": "lothal",
+    "name": {
+      "en": "Lothal Port City",
+      "hi": "लोथल बंदरगाह नगर"
+    },
+    "eraLabel": {
+      "en": "Indus Valley (c. 2000 BCE)",
+      "hi": "सिंधु घाटी सभ्यता (लगभग २००० ई.पू.)"
+    },
+    "yearApprox": -2000,
+    "locationMapCoords": { "x": 30, "y": 48 },
+    "regionName": "Gulf of Khambhat, Gujarat",
+    "stateStatus": "unlocked",
+    "tagline": {
+      "en": "World's First Tidal Dock & Carnelian Bead Workshop",
+      "hi": "विश्व का पहला ज्वारीय गोदीवाड़ा और अकीक मनका कार्यशाला"
+    },
+    "description": {
+      "en": "A bustling Harappan port city engineered with baked brick tidal basins, subterranean drainage, and master bead artisans exporting across the Arabian Sea to Mesopotamia (Dilmun & Ur).",
+      "hi": "पक्की ईंटों के ज्वारीय गोदी, भूमिगत जल निकासी और मेसोपोटामिया तक व्यापार करने वाले अकीक मनका शिल्पकारों से समृद्ध एक प्रसिद्ध हड़प्पा बंदरगाह।"
+    },
+    "foodQuest": {
+      "title": {
+        "en": "Aaj Ka Bhojan: The Barter Tide",
+        "hi": "आज का भोजन: वस्तु विनिमय की लहर"
+      },
+      "description": {
+        "en": "Assist Somendra at the bead furnace to drill authentic carnelian beads. Then barter them at the dock master's warehouse for roasted fish and barley cakes to sustain your Urja.",
+        "hi": "मनका कार्यशाला में अकीक के मनके तराशने में मदद करें। फिर गोदी प्रबंधक से विनिमय कर भुनी हुई मछली और जौ की रोटियाँ प्राप्त करें।"
+      },
+      "teachingCore": "Barter economy, tidal engineering, and food preservation in the Bronze Age."
+    },
+    "cargoDecisionPrompt": {
+      "id": "lothal_cargo_decision",
+      "shipDestination": "Magan (Oman) & Ur (Mesopotamia)",
+      "question": {
+        "en": "The trade ship 'Sagar Doot' is departing on the high tide! Which key consignment should Lothal dispatch to the Gulf merchants?",
+        "hi": "व्यापारिक जहाज 'सागर दूत' उच्च ज्वार पर रवाना हो रहा है! लोथल को खाड़ी के व्यापारियों को कौन सा प्रमुख माल भेजना चाहिए?"
+      },
+      "options": [
+        {
+          "id": "cargo_carnelian_timber",
+          "text": {
+            "en": "Polished Carnelian Beads & Fine Teak Timber",
+            "hi": "चमकदार अकीक के मनके और साखू/सागौन की उत्तम लकड़ी"
+          },
+          "consequence": {
+            "en": "Mesopotamian scribes record receipts of red 'Gug' stones (carnelian) from Meluhha! High prestige earned in Kaal records.",
+            "hi": "मेसोपोटामिया के अभिलेखों में मेलुहा से लाल पत्थरों (अकीक) के आगमन की पुष्टि दर्ज हुई! काल रिकॉर्ड में यश मिला।"
+          },
+          "cargoManifest": "40 Bags of Micro-drilled Carnelian + 12 Beams of Seasoned Wood"
+        },
+        {
+          "id": "cargo_cotton_copper",
+          "text": {
+            "en": "Woven Meluhhan Cotton Fabric & Copper Ingots",
+            "hi": "बुना हुआ हड़प्पा सूती वस्त्र और तांबे की सिल्लियां"
+          },
+          "consequence": {
+            "en": "Persian Gulf merchants praise Lothal's lightweight loom fabric, protecting inland food supply routes.",
+            "hi": "फारस की खाड़ी के व्यापारियों ने लोथल के हथकरघा वस्त्रों की सराहना की, जिससे व्यापारिक अन्न मार्ग सुरक्षित रहे।"
+          },
+          "cargoManifest": "80 Bales of Dyed Cotton + 25 Lothal Ingot Seals"
+        }
+      ]
+    },
+    "zones": [
+      {
+        "id": "zone_dock",
+        "name": {
+          "en": "Tidal Basin & Wharf",
+          "hi": "ज्वारीय गोदीवाड़ा एवं घाट"
+        },
+        "description": {
+          "en": "Engineered basin with baked-brick sluice gates filling at high tide.",
+          "hi": "उच्च ज्वार पर जल भरने वाले पक्की ईंटों के स्लुइस गेट से युक्त वैज्ञानिक गोदी।"
+        },
+        "isometricCenter": { "x": 180, "y": 280 },
+        "npcIds": ["npc_dock_master"],
+        "miniGameId": "tide_dock",
+        "foodSourceNpcId": "npc_dock_master"
+      },
+      {
+        "id": "zone_bead_factory",
+        "name": {
+          "en": "Bead Kiln & Workshop",
+          "hi": "मनका भट्टी एवं कार्यशाला"
+        },
+        "description": {
+          "en": "Craftsmen heating agate and drilling micro-holes with chert tips.",
+          "hi": "पत्थर को तपाकर सूक्ष्म छेदों वाले मनके बनाने की कार्यशाला।"
+        },
+        "isometricCenter": { "x": 480, "y": 180 },
+        "npcIds": ["npc_bead_artisan"],
+        "miniGameId": "bead_driller"
+      },
+      {
+        "id": "zone_warehouse",
+        "name": {
+          "en": "Acro-Granary & Seals Bureau",
+          "hi": "नगर अन्नागार एवं मुहर कक्ष"
+        },
+        "description": {
+          "en": "Raised mud-brick podium holding grain storage and clay sealing archives.",
+          "hi": "ऊँचे चबूतरे पर बना सुरक्षित अन्नागार और मुहर प्रमाणीकरण स्थल।"
+        },
+        "isometricCenter": { "x": 340, "y": 420 },
+        "npcIds": ["npc_warehouse_keeper"],
+        "miniGameId": "seal_match"
+      }
+    ],
+    "toyId": "toy_terracotta_bull",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "maurya",
+    "name": {
+      "en": "Mauryan Pataliputra",
+      "hi": "मौर्य कालीन पाटलिपुत्र"
+    },
+    "eraLabel": {
+      "en": "Ashokan Empire (c. 250 BCE)",
+      "hi": "अशोक कालीन भारत (लगभग २५० ई.पू.)"
+    },
+    "yearApprox": -250,
+    "locationMapCoords": { "x": 68, "y": 42 },
+    "regionName": "Ganges Basin, Magadha",
+    "stateStatus": "locked",
+    "tagline": {
+      "en": "Royal Highways, Roadside Wells & Pillar Inscriptions",
+      "hi": "शाही राजमार्ग, छायादार कुएँ और स्तम्भ अभिलेख"
+    },
+    "description": {
+      "en": "The magnificent metropolis guarded by wooden palisades along the Ganga. Along the Grand Highway, rest stops, banyan groves, and medicinal gardens ensure travellers never exhaust their Urja. [VERIFY]",
+      "hi": "गंगा तट पर काष्ठ प्राचीरों से सुरक्षित विशाल राजधानी। राजमार्ग पर कुएँ और आम्रकुंज यात्रियों को संबल देते हैं। [VERIFY]"
+    },
+    "foodQuest": {
+      "title": {
+        "en": "Aaj Ka Bhojan: The Highway Oases",
+        "hi": "आज का भोजन: राजमार्ग के आश्रय"
+      },
+      "description": {
+        "en": "Plan your journey between Ashoka's royal edict wells and mango orchards before Urja runs out. [VERIFY]",
+        "hi": "ऊर्जा समाप्त होने से पहले सम्राट अशोक के राजमार्ग कुओं और फलोद्यानों के बीच यात्रा मार्ग चुनें। [VERIFY]"
+      },
+      "teachingCore": "State-sponsored public welfare, reforestation, and ancient highway logistics."
+    },
+    "zones": [],
+    "toyId": "toy_maurya_cart",
+    "status": "VERIFY"
+  },
+  {
+    "id": "chola",
+    "name": {
+      "en": "Chola Thanjavur",
+      "hi": "चोल कालीन तंजावुर"
+    },
+    "eraLabel": {
+      "en": "Chola Golden Age (c. 1000 CE)",
+      "hi": "चोल साम्राज्य (लगभग १००० ई.)"
+    },
+    "yearApprox": 1000,
+    "locationMapCoords": { "x": 48, "y": 80 },
+    "regionName": "Kaveri Delta, Tamilakam",
+    "stateStatus": "locked",
+    "tagline": {
+      "en": "Living Granaries & Kaveri Water Engineering",
+      "hi": "कावेरी जल अभियांत्रिकी और बृहदेश्वर की भव्यता"
+    },
+    "description": {
+      "en": "Heartland of temple architecture and hydraulic mastery. The Kallanai (Grand Anicut) diverts monsoon torrents into tiered paddy fields nourishing entire districts. [VERIFY]",
+      "hi": "कावेरी डेल्टा में कल्लाणई बांध और जल-प्रणालियों द्वारा लहलहाते धान के खेत। [VERIFY]"
+    },
+    "foodQuest": {
+      "title": {
+        "en": "Aaj Ka Bhojan: Channels of the Kaveri",
+        "hi": "आज का भोजन: कावेरी की नहरें"
+      },
+      "description": {
+        "en": "Route sluice water through stone conduits to flood the village rice paddies for an autumn harvest. [VERIFY]",
+        "hi": "धान के खेतों को सींचने के लिए पत्थर की नहरों से जल का सही मार्ग बनाएं। [VERIFY]"
+      },
+      "teachingCore": "Ancient hydraulic civil engineering and delta agriculture."
+    },
+    "zones": [],
+    "toyId": "toy_chola_dancer",
+    "status": "VERIFY"
+  },
+  {
+    "id": "vijayanagara",
+    "name": {
+      "en": "Vijayanagara Hampi",
+      "hi": "विजयनगर साम्राज्य (हम्पी)"
+    },
+    "eraLabel": {
+      "en": "Empire of Victory (c. 1500 CE)",
+      "hi": "विजयनगर वैभव (लगभग १५०० ई.)"
+    },
+    "yearApprox": 1500,
+    "locationMapCoords": { "x": 40, "y": 70 },
+    "regionName": "Tungabhadra River, Karnataka",
+    "stateStatus": "locked",
+    "tagline": {
+      "en": "Gems Weighed on Street Scales & International Bazaars",
+      "hi": "सड़कों पर बिकते रत्न और विश्व प्रसिद्ध हम्पी बाज़ार"
+    },
+    "description": {
+      "en": "A jewel of urban planning amidst boulder-strewn hills. Portuguese, Persian, and local merchants barter spices, horses, and gems under stone arcades. [VERIFY]",
+      "hi": "तुंगभद्रा के तट पर बसा समृद्ध व्यापारिक महानगर, जहाँ पत्थरों की वीथियों में सोने-मोतियों का विनिमय होता था। [VERIFY]"
+    },
+    "foodQuest": {
+      "title": {
+        "en": "Aaj Ka Bhojan: The Bountiful Bazaar",
+        "hi": "आज का भोजन: हम्पी का समृद्ध बाज़ार"
+      },
+      "description": {
+        "en": "Master ancient weights and measures to bargain for millet dumplings and coconut jaggery at the Virupaksha market. [VERIFY]",
+        "hi": "विट्ठल और विरूपाक्ष बाज़ार में पारंपरिक बाट और माप सीखकर रागी मुड्डे और नारियल गुड़ खरीदें। [VERIFY]"
+      },
+      "teachingCore": "Standardized weights, monetary currency, and global medieval trade."
+    },
+    "zones": [],
+    "toyId": "toy_kinhal_doll",
+    "status": "VERIFY"
+  },
+  {
+    "id": "solanki",
+    "name": {
+      "en": "Solanki Patan (Rani ki Vav)",
+      "hi": "सोलंकी कालीन पाटण (रानी की वाव)"
+    },
+    "eraLabel": {
+      "en": "Maru-Gurjara Renaissance (11th c. CE)",
+      "hi": "मारु-गुर्जर वास्तुकला (११वीं शताब्दी)"
+    },
+    "yearApprox": 1050,
+    "locationMapCoords": { "x": 28, "y": 42 },
+    "regionName": "Saraswati Valley, North Gujarat",
+    "stateStatus": "locked",
+    "tagline": {
+      "en": "Subterranean Stepwells & Sacred Water Conservation",
+      "hi": "भूमिगत बावड़ियाँ और अमूल्य जल संचयन"
+    },
+    "description": {
+      "en": "An inverted temple descending seven levels into the aquifer, carved with exquisite sculptures, keeping water pristine through scorching summers. [VERIFY]",
+      "hi": "सात तलों में नीचे उतरती अद्भुत वाव (बावड़ी), जहाँ भीषण गर्मी में भी जल शीतल और स्वच्छ रहता था। [VERIFY]"
+    },
+    "foodQuest": {
+      "title": {
+        "en": "Aaj Ka Bhojan: The Seven Levels of Rain",
+        "hi": "आज का भोजन: जल की सात गहराइयाँ"
+      },
+      "description": {
+        "en": "Manage stepwell silt filters and storage tiers across seasons to nourish oasis fruit groves. [VERIFY]",
+        "hi": "ऋतुओं के अनुसार वाव के जलस्तर और गाद निस्यंदन का संतुलन बनाकर फलोद्यानों को पोषित करें। [VERIFY]"
+      },
+      "teachingCore": "Arid zone hydrogeology and community water stewardship."
+    },
+    "zones": [],
+    "toyId": "toy_wooden_horse",
+    "status": "VERIFY"
+  }
+]

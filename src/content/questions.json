@@ -1,0 +1,234 @@
+[
+  {
+    "id": "q_carnelian_color",
+    "kingdom": "lothal",
+    "npcId": "npc_bead_artisan",
+    "topic": "Bead Crafting Metallurgy & Chemistry",
+    "question": {
+      "en": "Which ingenious method transforms dull yellowish agate stone into the vibrant red carnelian beads prized across the ancient world?",
+      "hi": "कौन सी अनूठी विधि साधारण पीले अकीक पत्थर को विश्व-प्रसिद्ध चमकदार लाल मनके में बदल देती है?"
+    },
+    "options": {
+      "en": [
+        "Soaking the pebbles in crushed red pomegranate rind dye",
+        "Slow, controlled heating inside closed clay pots in a furnace",
+        "Polishing them vigorously with river sand and camel fat"
+      ],
+      "hi": [
+        "पत्थरों को अनार के छिलके से बने लाल रंग में डुबोकर रखना",
+        "मिट्टी के बर्तनों में बंद कर भट्टी में नियंत्रित तापमान पर धीरे-धीरे तपाना",
+        "नदी की रेत और ऊंट की चर्बी से पत्थर को रगड़ना"
+      ]
+    },
+    "correctIndex": 1,
+    "explanation": {
+      "en": "Harappan artisans roasted iron-rich chalcedony in underground earthen kilns for several days. The heat oxidised iron particles, converting yellowish agate into glowing crimson carnelian!",
+      "hi": "हड़प्पा के कारीगर कई दिनों तक भूमिगत भट्टियों में पत्थर को तपाते थे। ताप से लोह-तत्व ऑक्सीकृत होकर पत्थर को गहरा लाल रंग दे देते थे!"
+    },
+    "source": "Kenoyer, J.M. - Ancient Cities of the Indus Valley Civilisation (Oxford Univ. Press)",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "q_bead_drilling",
+    "kingdom": "lothal",
+    "npcId": "npc_bead_artisan",
+    "topic": "Micro-Drilling Technology",
+    "question": {
+      "en": "How did Lothal lapidaries bore hair-thin holes through gemstone beads without shattering them?",
+      "hi": "लोथल के शिल्पकार रत्न मनकों को तोड़े बिना उनमें बाल जितने बारीक छेद कैसे करते थे?"
+    },
+    "options": {
+      "en": [
+        "Using extremely hard micro-drill bits crafted from chert and pinstone",
+        "Melting holes with white-hot copper acupuncture needles",
+        "Acid etching using fermented coastal fruit vinegar"
+      ],
+      "hi": [
+        "अत्यंत कठोर चर्ट (सिलिका पाषाण) से बने विशेष सूक्ष्म ड्रिल का उपयोग कर",
+        "अग्नि में तपी हुई तांबे की सुई से छेद पिघलाकर",
+        "खट्टे फलों के सिरके से पत्थर को गलाकर"
+      ]
+    },
+    "correctIndex": 0,
+    "explanation": {
+      "en": "Lothal bead-makers pioneered tubular drills made from rare, ultra-dense micro-crystalline chert (Ernestite), drilling from both ends until they met in the centre.",
+      "hi": "कारीगरों ने दुर्लभ कठोर चर्ट पत्थर के सूक्ष्म ड्रिल बनाए थे, जिनसे मनके के दोनों किनारों से ड्रिल कर केंद्र में छेद मिलाया जाता था।"
+    },
+    "source": "ASI Excavation Memoir 48: The Bead Industry at Lothal",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "q_tidal_dock",
+    "kingdom": "lothal",
+    "npcId": "npc_dock_master",
+    "topic": "Tidal Hydraulic Engineering",
+    "question": {
+      "en": "How did Lothal's brick dockyard maintain enough water to float seafaring ships even when the ocean tide receded?",
+      "hi": "समुद्र का भाटा आने पर भी लोथल का ईंटों का गोदीवाड़ा जहाजों को तैरने लायक पानी कैसे रोक पाता था?"
+    },
+    "options": {
+      "en": [
+        "Slaves pumped millions of litres from freshwater wells day and night",
+        "Engineered baked-brick sluice gates trapped high-tide sea water inside the basin",
+        "Ships were built with hollow clay pontoons that didn't need water"
+      ],
+      "hi": [
+        "दिन-रात कुओं से पानी खींचकर गोदी में भरा जाता था",
+        "पक्की ईंटों के स्लुइस गेट उच्च ज्वार के पानी को गोदी के अंदर ही रोक लेते थे",
+        "जहाज मिट्टी के तैरने वाले पहियों पर बनाए गए थे"
+      ]
+    },
+    "correctIndex": 1,
+    "explanation": {
+      "en": "Lothal's basin possessed an ingenious spillway and vertical wooden sluice gate. During spring tides, water entered through a 12-metre inlet, and closing the gate maintained flotation depth at low tide.",
+      "hi": "लोथल के गोदीवाड़े में प्रवेश द्वार और ऊर्ध्वाधर स्लुइस गेट था। ज्वार के समय पानी अंदर आने के बाद गेट बंद कर दिया जाता था, जिससे भाटे में भी पानी सुरक्षित रहता था।"
+    },
+    "source": "S.R. Rao - Lothal and the Indus Civilization (Asia Publishing House)",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "q_trade_destinations",
+    "kingdom": "lothal",
+    "npcId": "npc_dock_master",
+    "topic": "International Maritime Trade",
+    "question": {
+      "en": "To which ancient overseas trading hubs did ships departing from Lothal's wharf navigate across the Arabian Sea?",
+      "hi": "लोथल के घाट से निकलने वाले जहाज अरब सागर पार करके किन प्राचीन विदेशी व्यापार केंद्रों तक जाते थे?"
+    },
+    "options": {
+      "en": [
+        "Dilmun (modern Bahrain), Magan (Oman), and Sumer/Ur (Mesopotamia)",
+        "The Roman Empire port of Ostia and the British Isles",
+        "The Aztec capital of Tenochtitlan across the Pacific Ocean"
+      ],
+      "hi": [
+        "दिलमुन (बहरीन), मागन (ओमान) और सुमेर/उर (मेसोपोटामिया)",
+        "रोमन साम्राज्य का ओस्तिया बंदरगाह और ब्रिटेन",
+        "प्रशांत महासागर पार एज़्टेक साम्राज्य"
+      ]
+    },
+    "correctIndex": 0,
+    "explanation": {
+      "en": "Cuneiform tablets in Mesopotamia praise 'Meluhha' (the Indus region) for exporting carnelian, lapis lazuli, ivory comb crafts, and seasoned wood via Dilmun and Magan.",
+      "hi": "मेसोपोटामिया के सुमेरियन अभिलेखों में 'मेलुहा' (सिंधु क्षेत्र) से अकीक, हाथी दांत और काष्ठ के व्यापार का स्पष्ट उल्लेख मिलता है।"
+    },
+    "source": "Possehl, Gregory L. - The Indus Civilization: A Contemporary Perspective",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "q_seals_purpose",
+    "kingdom": "lothal",
+    "npcId": "npc_warehouse_keeper",
+    "topic": "Commerce & Sealing Technology",
+    "question": {
+      "en": "Why did Lothal's warehouse custodians press carved steatite seals into wet clay patties on cargo bales?",
+      "hi": "लोथल के अन्नागार संरक्षक सामान की गठरियों पर गीली मिट्टी लगाकर मुहरें क्यों छापते थे?"
+    },
+    "options": {
+      "en": [
+        "To serve as tamper-proof labels certifying ownership and cargo integrity",
+        "To ward off sea monsters with magical mythological incantations",
+        "As a decorative stamp to cover tears and holes in canvas sacks"
+      ],
+      "hi": [
+        "व्यापारिक स्वामित्व और सामान से छेड़छाड़ न होने का प्रामाणिक प्रमाण देने हेतु",
+        "समुद्री दैत्यों से रक्षा के लिए मंत्र अंकित करने हेतु",
+        "फटे हुए बोरों के छेदों को सजावटी ढंग से ढकने हेतु"
+      ]
+    },
+    "correctIndex": 0,
+    "explanation": {
+      "en": "At Lothal's warehouse, 65 clay sealings ('terracotta sealings') were found with woven reed and cord impressions on the back, proving they locked cargo bundles securely.",
+      "hi": "लोथल के अन्नागार में ६५ मिट्टी की छापें मिली हैं जिनके पीछे रस्सी और बोरों के निशान हैं, जो सिद्ध करते हैं कि वे सुरक्षा सील के रूप में उपयोग होती थीं।"
+    },
+    "source": "ASI Lothal Warehouse Excavation Report",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "q_unicorn_seal",
+    "kingdom": "lothal",
+    "npcId": "npc_warehouse_keeper",
+    "topic": "Indus Motifs & Guild Identity",
+    "question": {
+      "en": "What is the single most common animal creature carved onto Indus seals found in Lothal's trade archive?",
+      "hi": "लोथल के मुहर संग्रह में सबसे अधिक किस पशु आकृति का अंकन पाया गया है?"
+    },
+    "options": {
+      "en": [
+        "A mythical one-horned bull creature (often called the 'Unicorn')",
+        "A winged royal falcon clutching two gold rings",
+        "A fierce striped Bengal tiger wearing a pearl necklace"
+      ],
+      "hi": [
+        "एक सींग वाला रहस्यमयी वृषभ (जिसे 'यूनिकॉर्न' कहा जाता है)",
+        "सोने के छल्ले पकड़ा हुआ पंखों वाला बाज़",
+        "मोतियों की माला पहने हुआ बाघ"
+      ]
+    },
+    "correctIndex": 0,
+    "explanation": {
+      "en": "Over 60% of all Indus seals depict this profile beast with a curved single horn standing before a ritual brazier or manger.",
+      "hi": "सिंधु घाटी की ६०% से अधिक मुहरों पर एक सींग वाले वृषभ की आकृति मिलती है, जो संभवतः व्यापारिक संघों या विशिष्ट कुलों का प्रतीक थी।"
+    },
+    "source": "Parpola, Asko - Deciphering the Indus Script (Cambridge Univ. Press)",
+    "status": "INTERPRETATION"
+  },
+  {
+    "id": "q_urban_drainage",
+    "kingdom": "lothal",
+    "npcId": "npc_dock_master",
+    "topic": "Sanitary & Civil Engineering",
+    "question": {
+      "en": "What unique sanitation design kept Lothal's streets clean and disease-free 4,000 years ago?",
+      "hi": "४००० वर्ष पूर्व लोथल की सड़कों को स्वच्छ और रोगमुक्त रखने वाली कौन सी अनूठी व्यवस्था थी?"
+    },
+    "options": {
+      "en": [
+        "Subterranean covered drains made of baked bricks with inspection cesspools",
+        "Canals filled with live river crocodiles that consumed organic refuse",
+        "Dumping all garbage off the high acropolis cliffs into the sea"
+      ],
+      "hi": [
+        "पक्की ईंटों से ढकी भूमिगत नालियाँ और गाद साफ करने वाले हौद (सेसपूल)",
+        "कचरा खाने वाले मगरमच्छों से भरी खुली नहरें",
+        "ऊँचे टीले से सारा कूड़ा समुद्र में फेंक देना"
+      ]
+    },
+    "correctIndex": 0,
+    "explanation": {
+      "en": "Every Lothal house had a brick bath platform draining into covered street conduits. Soakage jars and cesspools caught solids so drains flowed freely without clogging.",
+      "hi": "लोथल के हर घर में स्नानागार था जिसका पानी पक्की नालियों में जाता था। कचरा रोकने के लिए सोख्ता गड्ढे बनाए गए थे ताकि नाली कभी बंद न हो।"
+    },
+    "source": "Chakrabarti, Dilip K. - The Archaeology of Ancient Indian Cities",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "q_weights_system",
+    "kingdom": "lothal",
+    "npcId": "npc_bead_artisan",
+    "topic": "Standardized Metrology",
+    "question": {
+      "en": "How did merchants across Harappan cities ensure fair trade without cheating on weights?",
+      "hi": "हड़प्पा के व्यापारी बिना किसी बेईमानी के निष्पक्ष व्यापार कैसे सुनिश्चित करते थे?"
+    },
+    "options": {
+      "en": [
+        "By using standardized polished cubic chert weights following a strict binary ratio (1, 2, 4, 8, 16...)",
+        "By trusting the village elder to estimate weight by hand bouncing",
+        "By comparing the weight of goods against sacks of dried cow dung"
+      ],
+      "hi": [
+        "मानकीकृत घनाकार चर्ट पत्थरों के बाटों द्वारा, जो १, २, ४, ८, १६ के अनुपात में बने थे",
+        "हाथ से उठाकर अनुमान लगाने की व्यवस्था द्वारा",
+        "सूखे गोबर के कंडे से तौलने की प्रथा द्वारा"
+      ]
+    },
+    "correctIndex": 0,
+    "explanation": {
+      "en": "Indus weights found at Lothal show unbelievable uniformity across a 1,000 km radius. The base unit was ~0.86 grams, matching precision scales found in the bead workshop.",
+      "hi": "लोथल में मिले बाट अत्यंत सटीक हैं और पूरे हड़प्पा क्षेत्र में एक समान हैं। आधारभूत इकाई लगभग ०.८६ ग्राम थी जो कीमती मनकों की तौल के लिए प्रयुक्त होती थी।"
+    },
+    "source": "Mainkar, V.B. - Metrology in the Indus Civilization",
+    "status": "VERIFIED"
+  }
+]

@@ -1,0 +1,254 @@
+[
+  {
+    "id": "bead_driller",
+    "kingdom": "lothal",
+    "title": {
+      "en": "The Carnelian Bead Driller",
+      "hi": "अकीक मनका वेधन"
+    },
+    "zoneId": "zone_bead_factory",
+    "championName": {
+      "en": "Somendra the Lapidary",
+      "hi": "शिल्पी सोमेंद्र"
+    },
+    "minUrjaToEnter": 20,
+    "failUrjaCost": 10,
+    "retryUrjaCost": 5,
+    "type": "rhythm",
+    "description": {
+      "en": "Tap in rhythm as the chert drill bit aligns with the bead's axis. Keep pressure steady—too fast or off-beat will crack the precious carnelian!",
+      "hi": "जैसे ही चर्ट ड्रिल मनके के केंद्र में आए, सही ताल में टैप करें। दबाव संतुलित रखें—गलत ताल से कीमती अकीक चटक सकता है!"
+    },
+    "lore": {
+      "en": "A single long cylindrical carnelian bead took up to two weeks of continuous drilling. A skilled artisan was treated like royalty across ancient trade routes.",
+      "hi": "एक लंबे बेलनाकार अकीक मनके को छेदने में दो सप्ताह तक का समय लगता था। कुशल मनका शिल्पी का प्राचीन व्यापार जगत में अत्यधिक सम्मान था।"
+    },
+    "starCriteria": {
+      "oneStar": "Score at least 150 points (Pass: earn 3 Drilled Beads & Food)",
+      "twoStar": "Score at least 300 points with < 2 misfires",
+      "threeStar": "Score 450+ points (Flawless Gem: unlock Master Lapidary Journal Fact)"
+    },
+    "rewards": {
+      "oneStarFoodId": "barley_cake",
+      "threeStarBonus": "Master Lapidary Chert Bit",
+      "gyaanPoints": 25
+    },
+    "status": "VERIFIED"
+  },
+  {
+    "id": "tide_dock",
+    "kingdom": "lothal",
+    "title": {
+      "en": "Tidal Dock Navigator",
+      "hi": "ज्वारीय गोदी नाविक"
+    },
+    "zoneId": "zone_dock",
+    "championName": {
+      "en": "Marak the Dockmaster",
+      "hi": "गोदी प्रबंधक मारक"
+    },
+    "minUrjaToEnter": 20,
+    "failUrjaCost": 10,
+    "retryUrjaCost": 5,
+    "type": "timing",
+    "description": {
+      "en": "Watch the ocean tide curve! Press and hold to guide the merchant dhow through the narrow brick inlet at peak spring tide before the sluice gates close.",
+      "hi": "समुद्र के ज्वार पर नज़र रखें! जब जलस्तर उच्चतम हो, तब जहाज को संकरे मुहाने से गोदी में प्रवेश कराएं, इससे पहले कि स्लुइस गेट बंद हों।"
+    },
+    "lore": {
+      "en": "Lothal's inlet basin was positioned precisely to take advantage of the 8-metre Gulf of Khambhat tidal bore—the highest in the subcontinent.",
+      "hi": "लोथल की गोदी को खंभात की खाड़ी के ८ मीटर ऊँचे ज्वार का लाभ उठाने के लिए विशेष कोण पर बनाया गया था।"
+    },
+    "starCriteria": {
+      "oneStar": "Safely dock 2 ships within the tidal window",
+      "twoStar": "Dock 3 ships with zero hull scrapes",
+      "threeStar": "Perfect tidal docking for all 4 merchant fleets"
+    },
+    "rewards": {
+      "oneStarFoodId": "roasted_fish",
+      "threeStarBonus": "Seafarer's Bronze Compass Pointer",
+      "gyaanPoints": 30
+    },
+    "status": "VERIFIED"
+  },
+  {
+    "id": "seal_match",
+    "kingdom": "lothal",
+    "title": {
+      "en": "Archive of the Indus Seals",
+      "hi": "सिंधु मुहर स्मृति मिलान"
+    },
+    "zoneId": "zone_warehouse",
+    "championName": {
+      "en": "Revati the Granary Custodian",
+      "hi": "संरक्षक रेवती"
+    },
+    "minUrjaToEnter": 15,
+    "failUrjaCost": 10,
+    "retryUrjaCost": 5,
+    "type": "memory",
+    "description": {
+      "en": "Inspect and match authentic Harappan seal animal motifs: Unicorn, Humped Zebu Bull, Elephant, Rhinoceros, Tiger, and Fish. Note: Seals use authentic animal motifs only; no invented script translations!",
+      "hi": "हड़प्पाकालीन मुहरों के वास्तविक पशु प्रतीकों का मिलान करें: एक सींग वाला वृषभ, कूबड़ वाला नंदी, हाथी, गैंडा, बाघ और मछली।"
+    },
+    "lore": {
+      "en": "Indus seals are made of soft steatite stone hardened by heating and coated with a white alkaline glaze. They bear brief inscriptions of the undeciphered Indus script.",
+      "hi": "सिंधु मुहरें सेलखड़ी (स्टीआटाइट) पत्थर से बनी हैं जिन पर अवाचित सिंधु लिपि अंकित है।"
+    },
+    "starCriteria": {
+      "oneStar": "Match 4 pairs before the archive candle dims",
+      "twoStar": "Match 6 pairs with under 5 errors",
+      "threeStar": "Full 6-pair match in under 45 seconds"
+    },
+    "rewards": {
+      "oneStarFoodId": "jujube_dates",
+      "threeStarBonus": "Steatite Zebu Bull Seal Impression",
+      "gyaanPoints": 20
+    },
+    "status": "VERIFIED"
+  },
+  {
+    "id": "maurya_highway_route",
+    "kingdom": "maurya",
+    "title": {
+      "en": "Highway Oasis Planner",
+      "hi": "राजमार्ग विश्राम योजना"
+    },
+    "zoneId": "zone_highway",
+    "championName": {
+      "en": "Royal Scribe",
+      "hi": "शाही मुंशी"
+    },
+    "minUrjaToEnter": 20,
+    "failUrjaCost": 10,
+    "retryUrjaCost": 5,
+    "type": "puzzle",
+    "description": {
+      "en": "Route your journey between Ashoka's royal edict wells and shade trees before Urja depletes. [VERIFY]",
+      "hi": "सम्राट अशोक के छायादार कुओं के मध्य मार्ग तय करें। [VERIFY]"
+    },
+    "lore": {
+      "en": "Major Rock Edict II & VII note the planting of banyan trees and digging of wells at every half-kos along roads. [VERIFY]",
+      "hi": "अशोक के द्वितीय शिलालेख में हर आधे कोस पर कुएँ खोदने और वृक्ष लगाने का उल्लेख है। [VERIFY]"
+    },
+    "starCriteria": {
+      "oneStar": "Pass 1 route",
+      "twoStar": "Pass with 50+ Urja remaining",
+      "threeStar": "Optimal route completed"
+    },
+    "rewards": {
+      "oneStarFoodId": "barley_cake",
+      "threeStarBonus": "Ashoka Chakra Medallion",
+      "gyaanPoints": 25
+    },
+    "status": "VERIFY"
+  },
+  {
+    "id": "chola_irrigation_pipes",
+    "kingdom": "chola",
+    "title": {
+      "en": "Kallanai Sluice Puzzle",
+      "hi": "कल्लाणई जल वितरण"
+    },
+    "zoneId": "zone_paddy",
+    "championName": {
+      "en": "Chola Hydraulic Engineer",
+      "hi": "चोल जल शिल्पी"
+    },
+    "minUrjaToEnter": 20,
+    "failUrjaCost": 10,
+    "retryUrjaCost": 5,
+    "type": "puzzle",
+    "description": {
+      "en": "Rotate stone conduits to direct Kaveri water to dry rice paddies. [VERIFY]",
+      "hi": "कावेरी जल को सूखे धान के खेतों तक पहुँचाने के लिए पत्थर की नहरों को घुमाएं। [VERIFY]"
+    },
+    "lore": {
+      "en": "The Grand Anicut built across the Kaveri is one of the oldest water-diversion structures in the world still in use. [VERIFY]",
+      "hi": "कल्लाणई विश्व की सबसे पुरानी जल-विभाजक संरचनाओं में से एक है जो आज भी उपयोग में है। [VERIFY]"
+    },
+    "starCriteria": {
+      "oneStar": "Flood 2 paddies",
+      "twoStar": "Flood all paddies without overflow",
+      "threeStar": "Perfect water distribution in under 60s"
+    },
+    "rewards": {
+      "oneStarFoodId": "barley_cake",
+      "threeStarBonus": "Bronze Chola Coin",
+      "gyaanPoints": 25
+    },
+    "status": "VERIFY"
+  },
+  {
+    "id": "vijayanagara_bazaar_scales",
+    "kingdom": "vijayanagara",
+    "title": {
+      "en": "Hampi Bazaar Gem Scales",
+      "hi": "हम्पी बाज़ार रत्न तुला"
+    },
+    "zoneId": "zone_bazaar",
+    "championName": {
+      "en": "Merchant Guild Chief",
+      "hi": "व्यापारी गिल्ड प्रमुख"
+    },
+    "minUrjaToEnter": 20,
+    "failUrjaCost": 10,
+    "retryUrjaCost": 5,
+    "type": "puzzle",
+    "description": {
+      "en": "Balance the brass scale using Gunja seeds and pagoda gold weights. [VERIFY]",
+      "hi": "गुंजा के बीजों और सोने के बाटों से तुला को संतुलित करें। [VERIFY]"
+    },
+    "lore": {
+      "en": "Foreign travellers Domingo Paes and Abdur Razzaq wrote that diamonds and rubies were sold in Hampi by weight in open street stalls. [VERIFY]",
+      "hi": "विदेशी यात्रियों ने लिखा था कि हम्पी के बाज़ारों में खुलेआम तराजू पर तोलकर हीरे-मोती बेचे जाते थे। [VERIFY]"
+    },
+    "starCriteria": {
+      "oneStar": "Balance 2 transactions",
+      "twoStar": "Balance 3 with zero wrong weights",
+      "threeStar": "Master Merchant status achieved"
+    },
+    "rewards": {
+      "oneStarFoodId": "barley_cake",
+      "threeStarBonus": "Vijayanagara Varaha Coin",
+      "gyaanPoints": 25
+    },
+    "status": "VERIFY"
+  },
+  {
+    "id": "solanki_stepwell_levels",
+    "kingdom": "solanki",
+    "title": {
+      "en": "Rani ki Vav Water Levels",
+      "hi": "रानी की वाव जल स्तर"
+    },
+    "zoneId": "zone_stepwell",
+    "championName": {
+      "en": "Stepwell Architect",
+      "hi": "वाव वास्तुकार"
+    },
+    "minUrjaToEnter": 20,
+    "failUrjaCost": 10,
+    "retryUrjaCost": 5,
+    "type": "puzzle",
+    "description": {
+      "en": "Manage stepwell silt filters across seasons to maintain drinking water quality. [VERIFY]",
+      "hi": "ऋतुओं के अनुसार वाव के जलस्तर और निस्यंदन का संतुलन बनाएं। [VERIFY]"
+    },
+    "lore": {
+      "en": "Rani ki Vav was designed not just as a reservoir but as an inverted underground temple honouring the sanctified life-force of water. [VERIFY]",
+      "hi": "रानी की वाव केवल जल भंडार नहीं बल्कि जल के सम्मान में बना भूमिगत उल्टा मंदिर है। [VERIFY]"
+    },
+    "starCriteria": {
+      "oneStar": "Preserve 1 seasonal tier",
+      "twoStar": "Preserve all 7 levels clean",
+      "threeStar": "Flawless hydro-balance"
+    },
+    "rewards": {
+      "oneStarFoodId": "barley_cake",
+      "threeStarBonus": "Carved Stele Amulet",
+      "gyaanPoints": 25
+    },
+    "status": "VERIFY"
+  }
+]
