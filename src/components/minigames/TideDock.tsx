@@ -1,131 +1,166 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { sound } from '../../utils/audio';
+import { TIDE_DOCK, tideDockStars } from './scoring';
 
 interface TideDockProps {
   onFinish: (stars: number, score: number) => void;
   onFail: () => void;
 }
 
+const TIDE_TICK_MS = 30;
+const TIDE_STEP = 1.6;
+const SHIP_TICK_MS = 40;
+const SHIP_STEP = 3;
+const SHIP_START_X = 10;
+const DOCK_X = 80;
+const SAFE_TIDE_MIN = 60;
+const SAFE_TIDE_MAX = 98;
+const RESULT_DELAY_MS = 900;
+
 export const TideDock: React.FC<TideDockProps> = ({ onFinish, onFail }) => {
   const [tideLevel, setTideLevel] = useState(20); // 0 (low tide) to 100 (peak spring tide)
-  const [tideDirection, setTideDirection] = useState(1);
-  const [shipX, setShipX] = useState(10); // ship position percentage 10% to 90%
+  const [shipX, setShipX] = useState(SHIP_START_X); // ship position percentage 10% to 90%
   const [isSailing, setIsSailing] = useState(false);
   const [dockedCount, setDockedCount] = useState(0);
-  const [attemptsLeft, setAttemptsLeft] = useState(4);
+  const [attemptsLeft, setAttemptsLeft] = useState<number>(TIDE_DOCK.fleets);
   const [feedback, setFeedback] = useState<string | null>(null);
 
-  const tideLevelRef = useRef(tideLevel);
-  tideLevelRef.current = tideLevel;
-  const dockedCountRef = useRef(dockedCount);
-  dockedCountRef.current = dockedCount;
-  const attemptsLeftRef = useRef(attemptsLeft);
-  attemptsLeftRef.current = attemptsLeft;
-  const isSailingRef = useRef(isSailing);
-  isSailingRef.current = isSailing;
+  // Game logic lives in refs and runs in timer callbacks, never inside state updaters,
+  // so it runs exactly once per event (StrictMode double-invokes updaters).
+  const game = useRef({
+    tideLevel: 20,
+    tideDirection: 1,
+    shipX: SHIP_START_X,
+    isSailing: false,
+    docked: 0,
+    attemptsLeft: TIDE_DOCK.fleets as number,
+    isFinished: false
+  });
+  const callbacksRef = useRef({ onFinish, onFail });
+  useEffect(() => {
+    callbacksRef.current = { onFinish, onFail };
+  }, [onFinish, onFail]);
+  const resultTimeoutRef = useRef<number | null>(null);
 
   // Tide oscillation (Gulf of Khambhat tide simulation)
   useEffect(() => {
-    const interval = setInterval(() => {
-      setTideLevel((prev) => {
-        let next = prev + tideDirection * 1.6;
-        if (next >= 100) {
-          setTideDirection(-1);
-          next = 100;
-        } else if (next <= 0) {
-          setTideDirection(1);
-          next = 0;
-        }
-        return next;
-      });
-    }, 30);
+    const g = game.current;
+    const interval = window.setInterval(() => {
+      let next = g.tideLevel + g.tideDirection * TIDE_STEP;
+      if (next >= 100) {
+        g.tideDirection = -1;
+        next = 100;
+      } else if (next <= 0) {
+        g.tideDirection = 1;
+        next = 0;
+      }
+      g.tideLevel = next;
+      setTideLevel(next);
+    }, TIDE_TICK_MS);
 
     return () => clearInterval(interval);
-  }, [tideDirection]);
+  }, []);
+
+  // Clear a pending result if the player closes the contest during the end-of-game pause.
+  useEffect(() => () => {
+    if (resultTimeoutRef.current !== null) clearTimeout(resultTimeoutRef.current);
+  }, []);
+
+  const finishGame = () => {
+    const g = game.current;
+    g.isFinished = true;
+    resultTimeoutRef.current = window.setTimeout(() => {
+      resultTimeoutRef.current = null;
+      const stars = tideDockStars(g.docked);
+      if (stars >= 1) {
+        callbacksRef.current.onFinish(stars, g.docked * 100);
+      } else {
+        callbacksRef.current.onFail();
+      }
+    }, RESULT_DELAY_MS);
+  };
+
+  const handleArrival = () => {
+    const g = game.current;
+    g.isSailing = false;
+    g.shipX = SHIP_START_X;
+    g.attemptsLeft -= 1;
+    setIsSailing(false);
+    setShipX(SHIP_START_X);
+    setAttemptsLeft(g.attemptsLeft);
+
+    if (g.tideLevel >= SAFE_TIDE_MIN && g.tideLevel <= SAFE_TIDE_MAX) {
+      sound.playCorrect();
+      g.docked += 1;
+      setDockedCount(g.docked);
+      setFeedback('⛵ SUCCESS! High tide buoyed the dhow smoothly into the basin!');
+    } else {
+      sound.playWrong();
+      setFeedback('💥 GROUNDED! Tide was too shallow or chaotic! Hull scraped the brick sill.');
+    }
+
+    if (g.attemptsLeft <= 0) finishGame();
+  };
 
   // Ship movement when sailing forward
   useEffect(() => {
     if (!isSailing) return;
+    const g = game.current;
 
-    const shipInterval = setInterval(() => {
-      setShipX((prev) => {
-        const next = prev + 3;
-        // Check if reached dock basin (80%)
-        if (next >= 80) {
-          setIsSailing(false);
-          const currentTide = tideLevelRef.current;
-          // Check tide level at arrival: Safe window between 60% and 98%
-          if (currentTide >= 60 && currentTide <= 98) {
-            sound.playCorrect();
-            const newCount = dockedCountRef.current + 1;
-            setDockedCount(newCount);
-            setFeedback('⛵ SUCCESS! High tide buoyed the dhow smoothly into the basin!');
-            checkEndGame(newCount, attemptsLeftRef.current - 1);
-          } else {
-            sound.playWrong();
-            setFeedback('💥 GROUNDED! Tide was too shallow or chaotic! Hull scraped the brick sill.');
-            checkEndGame(dockedCountRef.current, attemptsLeftRef.current - 1);
-          }
-          return 10; // reset ship
-        }
-        return next;
-      });
-    }, 40);
+    const shipInterval = window.setInterval(() => {
+      if (!g.isSailing) return;
+      g.shipX += SHIP_STEP;
+      if (g.shipX >= DOCK_X) {
+        handleArrival();
+      } else {
+        setShipX(g.shipX);
+      }
+    }, SHIP_TICK_MS);
 
     return () => clearInterval(shipInterval);
-  }, [isSailing]);
-
-  // Keyboard controls: Space or Enter to launch ship
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code === 'Space' || e.key === ' ' || e.key === 'Enter') {
-        e.preventDefault();
-        handleLaunchShip();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    // handleArrival only touches refs and state setters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSailing]);
 
   const handleLaunchShip = () => {
-    if (isSailingRef.current) return;
+    const g = game.current;
+    if (g.isSailing || g.isFinished) return;
+    g.isSailing = true;
     setIsSailing(true);
     sound.playEat();
     setFeedback('Ship navigating the tidal channel...');
   };
 
-  const checkEndGame = (finalCount: number, remainingAttempts: number) => {
-    setAttemptsLeft(remainingAttempts);
+  // Keyboard controls: Space or Enter to launch ship
+  const launchRef = useRef(handleLaunchShip);
+  useEffect(() => {
+    launchRef.current = handleLaunchShip;
+  });
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === 'Space' || e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        if (e.repeat) return;
+        launchRef.current();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
-    if (remainingAttempts <= 0 || finalCount >= 3) {
-      setTimeout(() => {
-        let stars = 0;
-        if (finalCount >= 3) stars = 3;
-        else if (finalCount === 2) stars = 2;
-        else if (finalCount === 1) stars = 1;
-
-        if (stars >= 1) {
-          onFinish(stars, finalCount * 100);
-        } else {
-          onFail();
-        }
-      }, 900);
-    }
-  };
-
-  const isSafeTide = tideLevel >= 60 && tideLevel <= 98;
+  const isSafeTide = tideLevel >= SAFE_TIDE_MIN && tideLevel <= SAFE_TIDE_MAX;
 
   return (
     <div style={{ textAlign: 'center', userSelect: 'none' }}>
       {/* Top Status */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 12px', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
         <div style={{ fontSize: '14px', fontWeight: 700 }}>
-          Docked Ships: <strong style={{ color: 'var(--terracotta-dark)', fontSize: '18px' }}>{dockedCount} / 3</strong>
+          Docked Ships: <strong style={{ color: 'var(--terracotta-dark)', fontSize: '18px' }}>{dockedCount} / {TIDE_DOCK.fleets}</strong>
         </div>
         <div style={{ fontSize: '14px', fontWeight: 700 }}>
           Attempts Remaining: {attemptsLeft}
         </div>
-        <div 
+        <div
           style={{
             fontSize: '12px',
             fontWeight: 800,
@@ -140,7 +175,7 @@ export const TideDock: React.FC<TideDockProps> = ({ onFinish, onFail }) => {
       </div>
 
       {/* Dock Basin Graphic Canvas View */}
-      <div 
+      <div
         style={{
           width: '100%',
           height: '180px',
@@ -153,7 +188,7 @@ export const TideDock: React.FC<TideDockProps> = ({ onFinish, onFail }) => {
         }}
       >
         {/* Tidal Water Level Overlay */}
-        <div 
+        <div
           style={{
             position: 'absolute',
             bottom: 0,
@@ -167,7 +202,7 @@ export const TideDock: React.FC<TideDockProps> = ({ onFinish, onFail }) => {
         />
 
         {/* High Tide Target Sluice Line */}
-        <div 
+        <div
           style={{
             position: 'absolute',
             bottom: '60%',
@@ -184,7 +219,7 @@ export const TideDock: React.FC<TideDockProps> = ({ onFinish, onFail }) => {
         </div>
 
         {/* Brick Wharf Pier on Right */}
-        <div 
+        <div
           style={{
             position: 'absolute',
             right: 0,
@@ -209,7 +244,7 @@ export const TideDock: React.FC<TideDockProps> = ({ onFinish, onFail }) => {
         </div>
 
         {/* The Merchant Ship */}
-        <div 
+        <div
           style={{
             position: 'absolute',
             left: `${shipX}%`,
@@ -230,9 +265,9 @@ export const TideDock: React.FC<TideDockProps> = ({ onFinish, onFail }) => {
       </div>
 
       {/* Launch Ship Action Button */}
-      <button 
+      <button
         className="btn-primary"
-        disabled={isSailing}
+        disabled={isSailing || attemptsLeft <= 0}
         onClick={handleLaunchShip}
         style={{
           width: '220px',

@@ -1,152 +1,147 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { sound } from '../../utils/audio';
+import { beadDrillerStars } from './scoring';
 
 interface BeadDrillerProps {
   onFinish: (stars: number, score: number) => void;
   onFail: () => void;
 }
 
+const TIME_LIMIT_S = 45;
+const NEEDLE_TICK_MS = 16;
+const NEEDLE_MIN = 5;
+const NEEDLE_MAX = 95;
+const START_SPEED = 1.4;
+const MAX_SPEED = 2.8;
+const PERFECT_ZONE = 8; // % from centre
+const GOOD_ZONE = 16;
+const FINISHED_DEPTH = 85;
+const MAX_CRACKS = 3;
+
 export const BeadDriller: React.FC<BeadDrillerProps> = ({ onFinish, onFail }) => {
   const [needlePos, setNeedlePos] = useState(50); // percentage 0 to 100
-  const [direction, setDirection] = useState(1);
   const [depth, setDepth] = useState(0); // 0 to 100% drilled
   const [score, setScore] = useState(0);
   const [cracks, setCracks] = useState(0); // max 3 cracks
-  const [combo, setCombo] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(45);
+  const [timeLeft, setTimeLeft] = useState(TIME_LIMIT_S);
   const [feedback, setFeedback] = useState<string | null>(null);
 
-  const speedRef = useRef(1.4);
-  const scoreRef = useRef(score);
-  scoreRef.current = score;
-  const depthRef = useRef(depth);
-  depthRef.current = depth;
-  const cracksRef = useRef(cracks);
-  cracksRef.current = cracks;
-  const comboRef = useRef(combo);
-  comboRef.current = combo;
-  const needlePosRef = useRef(needlePos);
-  needlePosRef.current = needlePos;
-
-  const timerRef = useRef<number | null>(null);
-  const isFinishedRef = useRef(false);
-
-  // Oscillation loop
+  // Game logic reads and writes these refs synchronously, so a tap that ends the
+  // game is evaluated with its own points included. React state is for display.
+  const game = useRef({
+    needlePos: 50,
+    direction: 1,
+    speed: START_SPEED,
+    depth: 0,
+    score: 0,
+    cracks: 0,
+    combo: 0,
+    timeLeft: TIME_LIMIT_S,
+    isFinished: false
+  });
+  const callbacksRef = useRef({ onFinish, onFail });
   useEffect(() => {
-    const interval = setInterval(() => {
-      setNeedlePos((prev) => {
-        let next = prev + direction * speedRef.current;
-        if (next >= 95) {
-          setDirection(-1);
-          next = 95;
-        } else if (next <= 5) {
-          setDirection(1);
-          next = 5;
-        }
-        return next;
-      });
-    }, 16);
+    callbacksRef.current = { onFinish, onFail };
+  }, [onFinish, onFail]);
 
-    return () => clearInterval(interval);
-  }, [direction]);
+  const needleTimerRef = useRef<number | null>(null);
+  const countdownRef = useRef<number | null>(null);
 
-  const evaluateResults = () => {
-    if (isFinishedRef.current) return;
-    isFinishedRef.current = true;
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
+  const stopTimers = () => {
+    if (needleTimerRef.current !== null) clearInterval(needleTimerRef.current);
+    if (countdownRef.current !== null) clearInterval(countdownRef.current);
+    needleTimerRef.current = null;
+    countdownRef.current = null;
+  };
 
-    const currentScore = scoreRef.current;
-    const currentDepth = depthRef.current;
+  const endGame = (failed: boolean) => {
+    const g = game.current;
+    if (g.isFinished) return;
+    g.isFinished = true;
+    stopTimers();
 
-    let stars = 0;
-    if (currentScore >= 400 || currentDepth >= 90) stars = 3;
-    else if (currentScore >= 250 || currentDepth >= 60) stars = 2;
-    else if (currentScore >= 120 || currentDepth >= 40) stars = 1;
-
+    const stars = failed ? 0 : beadDrillerStars(g.score, g.cracks);
     if (stars >= 1) {
-      onFinish(stars, currentScore);
+      callbacksRef.current.onFinish(stars, g.score);
     } else {
-      onFail();
+      callbacksRef.current.onFail();
     }
   };
 
-  // Countdown timer - only mounts once and runs accurately
+  // Needle oscillation and countdown
   useEffect(() => {
-    timerRef.current = window.setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          if (timerRef.current) clearInterval(timerRef.current);
-          evaluateResults();
-          return 0;
-        }
-        return prev - 1;
-      });
+    const g = game.current;
+    needleTimerRef.current = window.setInterval(() => {
+      let next = g.needlePos + g.direction * g.speed;
+      if (next >= NEEDLE_MAX) {
+        g.direction = -1;
+        next = NEEDLE_MAX;
+      } else if (next <= NEEDLE_MIN) {
+        g.direction = 1;
+        next = NEEDLE_MIN;
+      }
+      g.needlePos = next;
+      setNeedlePos(next);
+    }, NEEDLE_TICK_MS);
+
+    countdownRef.current = window.setInterval(() => {
+      g.timeLeft = Math.max(0, g.timeLeft - 1);
+      setTimeLeft(g.timeLeft);
+      if (g.timeLeft === 0) endGame(false);
     }, 1000);
 
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
+    return stopTimers;
+    // endGame only touches refs, so the timers never need restarting.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleDrillTap = () => {
-    if (isFinishedRef.current) return;
+    const g = game.current;
+    if (g.isFinished) return;
     sound.playDrillTap();
 
-    // Sweet spot is between 42% and 58%
-    const currentPos = needlePosRef.current;
-    const distFromCenter = Math.abs(currentPos - 50);
+    const distFromCenter = Math.abs(g.needlePos - 50);
 
-    if (distFromCenter <= 8) {
-      // Perfect core hit
+    if (distFromCenter <= PERFECT_ZONE) {
       sound.playCorrect();
-      const newCombo = comboRef.current + 1;
-      setCombo(newCombo);
-      const addedPoints = 40 + newCombo * 10;
-      setScore((s) => s + addedPoints);
-      const newDepth = Math.min(100, depthRef.current + 15);
-      setDepth(newDepth);
+      g.combo += 1;
+      const addedPoints = 40 + g.combo * 10;
+      g.score += addedPoints;
+      g.depth = Math.min(100, g.depth + 15);
+      g.speed = Math.min(MAX_SPEED, g.speed + 0.1);
       setFeedback('✨ PERFECT DRILL! (+' + addedPoints + ')');
-      speedRef.current = Math.min(2.8, speedRef.current + 0.1);
-
-      if (newDepth >= 85) {
-        evaluateResults();
-      }
-    } else if (distFromCenter <= 16) {
-      // Good hit
-      setCombo(0);
-      setScore((s) => s + 20);
-      const newDepth = Math.min(100, depthRef.current + 8);
-      setDepth(newDepth);
+    } else if (distFromCenter <= GOOD_ZONE) {
+      g.combo = 0;
+      g.score += 20;
+      g.depth = Math.min(100, g.depth + 8);
       setFeedback('👍 Good bore! (+20)');
-
-      if (newDepth >= 85) {
-        evaluateResults();
-      }
     } else {
       // Off-beat hit -> cracks the gemstone
       sound.playWrong();
-      setCombo(0);
-      const newCracks = cracksRef.current + 1;
-      setCracks(newCracks);
+      g.combo = 0;
+      g.cracks += 1;
+      setCracks(g.cracks);
       setFeedback('💥 CRACK! Off-center strike!');
-
-      if (newCracks >= 3) {
-        if (timerRef.current) clearInterval(timerRef.current);
-        isFinishedRef.current = true;
-        onFail();
-      }
+      if (g.cracks >= MAX_CRACKS) endGame(true);
+      return;
     }
+
+    setScore(g.score);
+    setDepth(g.depth);
+    if (g.depth >= FINISHED_DEPTH) endGame(false);
   };
 
-  // Keyboard controls: Space or Enter to drill
+  // Keyboard controls: Space or Enter to drill (ignoring auto-repeat from a held key)
+  const tapRef = useRef(handleDrillTap);
+  useEffect(() => {
+    tapRef.current = handleDrillTap;
+  });
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === 'Space' || e.key === ' ' || e.key === 'Enter') {
         e.preventDefault();
-        handleDrillTap();
+        if (e.repeat) return;
+        tapRef.current();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -156,7 +151,7 @@ export const BeadDriller: React.FC<BeadDrillerProps> = ({ onFinish, onFail }) =>
   return (
     <div style={{ textAlign: 'center', userSelect: 'none' }}>
       {/* Top Stats */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 12px', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
         <div style={{ fontSize: '14px', fontWeight: 700 }}>
           Score: <strong style={{ color: 'var(--terracotta-dark)', fontSize: '18px' }}>{score}</strong>
         </div>
@@ -169,7 +164,7 @@ export const BeadDriller: React.FC<BeadDrillerProps> = ({ onFinish, onFail }) =>
       </div>
 
       {/* Carnelian Bead Drilling Visualizer */}
-      <div 
+      <div
         style={{
           width: '100%',
           height: '110px',
@@ -185,9 +180,9 @@ export const BeadDriller: React.FC<BeadDrillerProps> = ({ onFinish, onFail }) =>
         }}
       >
         {/* Carnelian Bead Cylinder in center */}
-        <div 
+        <div
           style={{
-            width: '260px',
+            width: 'min(260px, 90%)',
             height: '56px',
             background: 'linear-gradient(90deg, #B22222 0%, #E63946 50%, #B22222 100%)',
             borderRadius: '28px',
@@ -198,7 +193,7 @@ export const BeadDriller: React.FC<BeadDrillerProps> = ({ onFinish, onFail }) =>
           }}
         >
           {/* Micro-Drill Depth Bore Tube */}
-          <div 
+          <div
             style={{
               position: 'absolute',
               left: '50%',
@@ -212,22 +207,26 @@ export const BeadDriller: React.FC<BeadDrillerProps> = ({ onFinish, onFail }) =>
             }}
           />
 
-          {/* Sweet Spot Target Zone */}
-          <div 
-            style={{
-              position: 'absolute',
-              left: '42%',
-              width: '16%',
-              height: '100%',
-              background: 'rgba(76, 175, 80, 0.35)',
-              borderLeft: '2px dashed #4CAF50',
-              borderRight: '2px dashed #4CAF50'
-            }}
-          />
         </div>
 
+        {/* Sweet Spot Target Zone: same coordinate space as the needle (the whole track),
+            so it marks exactly the perfect-hit window */}
+        <div
+          style={{
+            position: 'absolute',
+            left: `${50 - PERFECT_ZONE}%`,
+            width: `${PERFECT_ZONE * 2}%`,
+            top: 'calc(50% - 28px)', // aligned with the 56px bead
+            height: '56px',
+            background: 'rgba(76, 175, 80, 0.35)',
+            borderLeft: '2px dashed #4CAF50',
+            borderRight: '2px dashed #4CAF50',
+            pointerEvents: 'none'
+          }}
+        />
+
         {/* Chert Micro-Drill Needle */}
-        <div 
+        <div
           style={{
             position: 'absolute',
             left: `${needlePos}%`,
@@ -241,7 +240,7 @@ export const BeadDriller: React.FC<BeadDrillerProps> = ({ onFinish, onFail }) =>
             transition: 'none'
           }}
         >
-          <div 
+          <div
             style={{
               position: 'absolute',
               top: '-8px',
@@ -268,7 +267,7 @@ export const BeadDriller: React.FC<BeadDrillerProps> = ({ onFinish, onFail }) =>
       </div>
 
       {/* Tap Action Button */}
-      <button 
+      <button
         className="btn-primary"
         onClick={handleDrillTap}
         style={{

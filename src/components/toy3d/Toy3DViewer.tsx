@@ -5,6 +5,7 @@ import toysData from '../../content/toys.json';
 import { sound } from '../../utils/audio';
 import confetti from 'canvas-confetti';
 import { RotateCw, Printer, X, Sparkles, CheckCircle2 } from 'lucide-react';
+import { usePauseWhile } from '../../hooks/usePauseWhile';
 
 interface Toy3DModalProps {
   toyId: string;
@@ -22,14 +23,21 @@ export const Toy3DModal: React.FC<Toy3DModalProps> = ({
   const miniGameRecords = useGameStore((state) => state.miniGameRecords);
   const kaalShards = useGameStore((state) => state.kaalShards);
   const claimKaalShard = useGameStore((state) => state.claimKaalShard);
+  usePauseWhile(true);
 
   const [isAutoSpinning, setIsAutoSpinning] = useState(true);
   const [shardClaimed, setShardClaimed] = useState(kaalShards.includes('lothal_shard'));
 
+  // Read by the render loop, so toggling spin doesn't rebuild the whole WebGL scene
+  const autoSpinRef = useRef(isAutoSpinning);
+  useEffect(() => {
+    autoSpinRef.current = isAutoSpinning;
+  }, [isAutoSpinning]);
+
   const toy = toysData.find((t) => t.id === toyId) || toysData[0];
 
   // Check if all 3 Lothal champions are passed
-  const all3Passed = 
+  const all3Passed =
     Boolean(miniGameRecords['bead_driller']?.passed &&
     miniGameRecords['tide_dock']?.passed &&
     miniGameRecords['seal_match']?.passed);
@@ -158,58 +166,82 @@ export const Toy3DModal: React.FC<Toy3DModalProps> = ({
     groundMesh.position.set(0, -0.58, 0);
     scene.add(groundMesh);
 
-    // 4. Mouse / Touch Orbit Controls
+    // 4. Mouse / Touch / Pen Orbit Controls (pointer events cover all three)
     let isDragging = false;
-    let prevMouseX = 0;
-    let prevMouseY = 0;
+    let prevPointerX = 0;
+    let prevPointerY = 0;
 
-    const onMouseDown = (e: MouseEvent) => {
+    const onPointerDown = (e: PointerEvent) => {
       isDragging = true;
-      prevMouseX = e.clientX;
-      prevMouseY = e.clientY;
+      prevPointerX = e.clientX;
+      prevPointerY = e.clientY;
     };
 
-    const onMouseMove = (e: MouseEvent) => {
+    const onPointerMove = (e: PointerEvent) => {
       if (!isDragging) return;
-      const deltaX = e.clientX - prevMouseX;
-      const deltaY = e.clientY - prevMouseY;
+      const deltaX = e.clientX - prevPointerX;
+      const deltaY = e.clientY - prevPointerY;
       modelGroup.rotation.y += deltaX * 0.01;
       modelGroup.rotation.x = Math.max(-0.6, Math.min(0.6, modelGroup.rotation.x + deltaY * 0.01));
       wheels.forEach((w) => { w.rotation.y += deltaX * 0.02; });
-      prevMouseX = e.clientX;
-      prevMouseY = e.clientY;
+      prevPointerX = e.clientX;
+      prevPointerY = e.clientY;
     };
 
-    const onMouseUp = () => { isDragging = false; };
+    const onPointerUp = () => { isDragging = false; };
 
-    container.addEventListener('mousedown', onMouseDown);
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mouseup', onMouseUp);
+    container.addEventListener('pointerdown', onPointerDown);
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('pointercancel', onPointerUp);
 
-    // 5. Animation Loop
+    // Keep the renderer matched to its container when the window/modal resizes
+    const resizeObserver = new ResizeObserver(() => {
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+      if (w === 0 || h === 0) return;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    });
+    resizeObserver.observe(container);
+
+    // 5. Animation Loop (spin speed is per 60fps frame, scaled by elapsed time)
     let animId: number;
-    const animate = () => {
-      if (isAutoSpinning && !isDragging) {
-        modelGroup.rotation.y += 0.008;
-        wheels.forEach((w) => { w.rotation.y += 0.016; });
+    let lastTime = performance.now();
+    const animate = (now: number) => {
+      const frames = Math.min(3, (now - lastTime) / (1000 / 60));
+      lastTime = now;
+      if (autoSpinRef.current && !isDragging) {
+        modelGroup.rotation.y += 0.008 * frames;
+        wheels.forEach((w) => { w.rotation.y += 0.016 * frames; });
       }
       renderer.render(scene, camera);
       animId = requestAnimationFrame(animate);
     };
 
-    animate();
+    animId = requestAnimationFrame(animate);
 
     return () => {
       cancelAnimationFrame(animId);
-      container.removeEventListener('mousedown', onMouseDown);
-      window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('mouseup', onMouseUp);
+      resizeObserver.disconnect();
+      container.removeEventListener('pointerdown', onPointerDown);
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerUp);
+
+      // Free GPU resources; otherwise every open of the viewer leaks buffers and a WebGL context
+      scene.traverse((obj) => {
+        if (obj instanceof THREE.Mesh) obj.geometry.dispose();
+      });
+      [terracottaMat, darkTerracottaMat, axleMat, groundMat].forEach((m) => m.dispose());
       renderer.dispose();
+      renderer.forceContextLoss();
       if (container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
       }
     };
-  }, [isAutoSpinning]);
+  }, []);
 
   const handleClaimShard = () => {
     claimKaalShard('lothal');
@@ -224,8 +256,8 @@ export const Toy3DModal: React.FC<Toy3DModalProps> = ({
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div 
-        className="modal-content-card" 
+      <div
+        className="modal-content-card"
         onClick={(e) => e.stopPropagation()}
         style={{ maxWidth: '780px', width: '95%', borderLeft: '8px solid var(--terracotta)' }}
       >
@@ -248,21 +280,22 @@ export const Toy3DModal: React.FC<Toy3DModalProps> = ({
         </div>
 
         {/* 3D Viewport & Story Columns */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px', marginBottom: '18px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(300px, 100%), 1fr))', gap: '16px', marginBottom: '18px' }}>
           {/* Left: Interactive 3D Canvas */}
           <div style={{ position: 'relative' }}>
-            <div 
-              ref={mountRef} 
+            <div
+              ref={mountRef}
               style={{
                 width: '100%',
                 height: '320px',
                 borderRadius: '16px',
                 border: '2px solid var(--earth-border)',
                 cursor: 'grab',
-                overflow: 'hidden'
+                overflow: 'hidden',
+                touchAction: 'none'
               }}
             />
-            <div 
+            <div
               style={{
                 position: 'absolute',
                 bottom: '10px',
@@ -271,8 +304,8 @@ export const Toy3DModal: React.FC<Toy3DModalProps> = ({
                 gap: '6px'
               }}
             >
-              <button 
-                className="btn-secondary" 
+              <button
+                className="btn-secondary"
                 style={{ padding: '5px 10px', fontSize: '11px', background: 'rgba(255,255,255,0.85)' }}
                 onClick={() => setIsAutoSpinning(!isAutoSpinning)}
               >
@@ -304,8 +337,8 @@ export const Toy3DModal: React.FC<Toy3DModalProps> = ({
 
             {/* Action Bar */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <button 
-                className="btn-secondary" 
+              <button
+                className="btn-secondary"
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '13px', borderColor: 'var(--indigo)' }}
                 onClick={() => {
                   onClose();
@@ -317,7 +350,7 @@ export const Toy3DModal: React.FC<Toy3DModalProps> = ({
               </button>
 
               {all3Passed && !shardClaimed && (
-                <button 
+                <button
                   className="btn-primary"
                   onClick={handleClaimShard}
                   style={{
@@ -336,7 +369,7 @@ export const Toy3DModal: React.FC<Toy3DModalProps> = ({
               )}
 
               {shardClaimed && (
-                <div 
+                <div
                   style={{
                     background: '#E8F5E9',
                     border: '1px solid #4CAF50',

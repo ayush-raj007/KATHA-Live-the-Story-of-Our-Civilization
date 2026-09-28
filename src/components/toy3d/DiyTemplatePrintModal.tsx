@@ -2,6 +2,7 @@ import React from 'react';
 import { useGameStore } from '../../store/useGameStore';
 import toysData from '../../content/toys.json';
 import { Printer, X } from 'lucide-react';
+import { usePauseWhile } from '../../hooks/usePauseWhile';
 
 interface DiyTemplatePrintModalProps {
   toyId: string;
@@ -10,6 +11,7 @@ interface DiyTemplatePrintModalProps {
 
 export const DiyTemplatePrintModal: React.FC<DiyTemplatePrintModalProps> = ({ toyId, onClose }) => {
   const language = useGameStore((state) => state.language);
+  usePauseWhile(true);
   const toy = toysData.find((t) => t.id === toyId) || toysData[0];
   const { diyTemplate } = toy;
 

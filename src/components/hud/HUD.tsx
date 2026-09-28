@@ -1,17 +1,19 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useGameStore } from '../../store/useGameStore';
-import { 
-  Zap, 
-  Map as MapIcon, 
-  Home, 
-  Volume2, 
-  VolumeX, 
-  Languages, 
-  Backpack, 
-  AlertTriangle, 
+import {
+  Zap,
+  Map as MapIcon,
+  Home,
+  Volume2,
+  VolumeX,
+  Languages,
+  Backpack,
+  AlertTriangle,
   RotateCcw
 } from 'lucide-react';
 import { sound } from '../../utils/audio';
+import { LOW_URJA_THRESHOLD } from '../../store/useGameStore';
+import { usePauseWhile } from '../../hooks/usePauseWhile';
 
 export const HUD: React.FC = () => {
   const urja = useGameStore((state) => state.urja);
@@ -34,10 +36,31 @@ export const HUD: React.FC = () => {
   const inventory = useGameStore((state) => state.inventory);
   const consumeFood = useGameStore((state) => state.consumeFood);
   const openToyModal = useGameStore((state) => state.openToyModal);
+  usePauseWhile(isBagOpen);
+
+  // Screens and overlays are laid out below the HUD, whose height changes as it
+  // wraps on narrow screens, so publish its bottom edge as a CSS variable.
+  const headerRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    const header = headerRef.current;
+    if (!header) return;
+    const root = document.documentElement;
+    const update = () => {
+      root.style.setProperty('--hud-height', `${Math.ceil(header.getBoundingClientRect().bottom)}px`);
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(header);
+    window.addEventListener('resize', update);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', update);
+    };
+  }, []);
 
   const getUrjaClass = () => {
     if (urja > 60) return 'high';
-    if (urja > 25) return 'med';
+    if (urja >= LOW_URJA_THRESHOLD) return 'med';
     return 'low';
   };
 
@@ -69,7 +92,7 @@ export const HUD: React.FC = () => {
       {isLowUrja && <div className="low-urja-vignette" />}
 
       {/* Top HUD Bar */}
-      <header className="hud-header">
+      <header className="hud-header" ref={headerRef}>
         {/* Left: Urja & Gyaan */}
         <div className="hud-section">
           {/* Urja Status Bar */}
@@ -79,8 +102,8 @@ export const HUD: React.FC = () => {
               {language === 'en' ? 'URJA' : 'ऊर्जा'}
             </span>
             <div className="urja-bar-outer">
-              <div 
-                className={`urja-bar-inner ${getUrjaClass()}`} 
+              <div
+                className={`urja-bar-inner ${getUrjaClass()}`}
                 style={{ width: `${urja}%` }}
               />
             </div>
@@ -96,7 +119,7 @@ export const HUD: React.FC = () => {
 
           {/* Low Energy Alert Badge */}
           {isLowUrja && (
-            <div 
+            <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -119,7 +142,7 @@ export const HUD: React.FC = () => {
 
         {/* Center: Active Quest Tracker ("Aaj Ka Bhojan") */}
         {activeQuest && activeScreen === 'kingdom' && (
-          <div 
+          <div
             className="quest-tracker-card"
             onClick={() => handleCompanionHint()}
             title="Click companion for next hint (-3 Urja)"
@@ -139,7 +162,7 @@ export const HUD: React.FC = () => {
         {/* Right: Quick Menus & Toggles */}
         <div className="hud-section">
           {/* Inventory Bag */}
-          <button 
+          <button
             className="nav-pill-btn"
             onClick={() => {
               if (soundEnabled) sound.playClick();
@@ -152,7 +175,7 @@ export const HUD: React.FC = () => {
           </button>
 
           {/* Kaal Ghar Hub */}
-          <button 
+          <button
             className={`nav-pill-btn ${activeScreen === 'kaal_ghar' ? 'primary' : ''}`}
             onClick={() => {
               if (soundEnabled) sound.playClick();
@@ -165,7 +188,7 @@ export const HUD: React.FC = () => {
           </button>
 
           {/* Kaal Map */}
-          <button 
+          <button
             className={`nav-pill-btn ${activeScreen === 'kaal_map' ? 'primary' : ''}`}
             onClick={() => {
               if (soundEnabled) sound.playClick();
@@ -178,7 +201,7 @@ export const HUD: React.FC = () => {
           </button>
 
           {/* Language Toggle */}
-          <button 
+          <button
             className="nav-pill-btn"
             onClick={handleLangToggle}
             title="Toggle Language (English / हिंदी)"
@@ -188,7 +211,7 @@ export const HUD: React.FC = () => {
           </button>
 
           {/* Sound Toggle */}
-          <button 
+          <button
             className="nav-pill-btn"
             onClick={handleSoundToggle}
             title="Toggle Sound Effects"
@@ -201,8 +224,8 @@ export const HUD: React.FC = () => {
       {/* Companion Bubble (Lothal Terracotta Bull on Wheels) */}
       {companionMessage && (
         <div className="companion-bubble">
-          <button 
-            className="companion-avatar-btn" 
+          <button
+            className="companion-avatar-btn"
             onClick={handleCompanionHint}
             title="Click for hint (-3 Urja)"
           >
@@ -211,7 +234,7 @@ export const HUD: React.FC = () => {
           <div className="companion-speech">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <strong>{language === 'en' ? 'Terracotta Nandi Companion' : 'पहिएदार नंदी साथी'}</strong>
-              <button 
+              <button
                 onClick={clearCompanionMessage}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: '#888' }}
               >
@@ -244,9 +267,9 @@ export const HUD: React.FC = () => {
                 : 'भोजन खाने से ऊर्जा पुनः प्राप्त होती है और इतिहास आधारित खाद्य तथ्य खुलते हैं।'}
             </p>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(220px, 100%), 1fr))', gap: '12px' }}>
               {Object.values(inventory).map((item) => (
-                <div 
+                <div
                   key={item.id}
                   style={{
                     background: '#FFF',
@@ -270,7 +293,7 @@ export const HUD: React.FC = () => {
                   </div>
 
                   {item.category === 'food' && (
-                    <button 
+                    <button
                       className="btn-primary"
                       style={{ padding: '6px 12px', fontSize: '12px', marginTop: '4px' }}
                       onClick={() => handleEat(item.id)}
@@ -280,7 +303,7 @@ export const HUD: React.FC = () => {
                   )}
 
                   {item.id === 'toy_terracotta_bull' && (
-                    <button 
+                    <button
                       className="btn-primary"
                       style={{ padding: '6px 12px', fontSize: '12px', marginTop: '4px', background: 'var(--indigo)' }}
                       onClick={() => {
@@ -311,8 +334,8 @@ export const HUD: React.FC = () => {
                 ? 'Your Channapatna spinning top wobbled as your Urja reached zero! The temporal tether pulled you safely back to Kaal Ghar with 50 Urja. Unbanked fresh food was lost in the timeline, but your Gyaan, journal entries, and collected toys remain safe!'
                 : 'ऊर्जा शून्य होने पर आपका लट्टू डगमगाया और समय की तरंगें आपको सुरक्षित काल घर ले आईं। ऊर्जा ५० बहाल हुई। अन्न खो गया किंतु अर्जित ज्ञान व खिलौने सुरक्षित हैं!'}
             </p>
-            <button 
-              className="btn-primary" 
+            <button
+              className="btn-primary"
               onClick={recoverFromKaalThakaan}
               style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
             >

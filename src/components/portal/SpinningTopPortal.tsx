@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { sound } from '../../utils/audio';
 
+const MIN_SPIN_POWER = 40; // % torque needed to open the portal
+
 interface SpinningTopPortalProps {
   destinationKingdomName: string;
   onTransitionComplete: () => void;
@@ -16,25 +18,38 @@ export const SpinningTopPortal: React.FC<SpinningTopPortalProps> = ({
   const [spinPower, setSpinPower] = useState(0); // 0 to 100
   const [isWarping, setIsWarping] = useState(false);
   const holdIntervalRef = useRef<number | null>(null);
+  // Guards against double launches (e.g. double-clicking Quick Spin)
+  const hasLaunchedRef = useRef(false);
+  const warpTimeoutRef = useRef<number | null>(null);
 
-  // Sound effect for spinning top
-  const handleMouseDown = () => {
-    if (isWarping) return;
+  useEffect(() => () => {
+    if (warpTimeoutRef.current !== null) clearTimeout(warpTimeoutRef.current);
+  }, []);
+
+  const launchPortal = (delayMs: number) => {
+    if (hasLaunchedRef.current) return;
+    hasLaunchedRef.current = true;
+    setIsWarping(true);
+    warpTimeoutRef.current = window.setTimeout(onTransitionComplete, delayMs);
+  };
+
+  // Pointer events handle mouse, touch and pen once each (touch used to fire both
+  // touch and mouse handlers, playing the sound twice and launching twice).
+  const handlePointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (isWarping || isHolding) return;
+    e.currentTarget.setPointerCapture?.(e.pointerId);
     setIsHolding(true);
     sound.playTopSpin();
   };
 
-  const handleMouseUp = () => {
+  const handlePointerUp = () => {
     if (!isHolding || isWarping) return;
     setIsHolding(false);
 
-    if (spinPower >= 40) {
+    if (spinPower >= MIN_SPIN_POWER) {
       // Successful spin release! Launch portal warp
-      setIsWarping(true);
       sound.playCorrect();
-      setTimeout(() => {
-        onTransitionComplete();
-      }, 1600);
+      launchPortal(1600);
     } else {
       // Weak spin, resets
       setSpinPower(0);
@@ -57,13 +72,13 @@ export const SpinningTopPortal: React.FC<SpinningTopPortalProps> = ({
   }, [isHolding, isWarping]);
 
   return (
-    <div 
+    <div
       style={{
         position: 'fixed',
         inset: 0,
         zIndex: 500,
-        background: isWarping 
-          ? 'radial-gradient(circle at center, #F4A261 0%, #C85A32 40%, #1A2340 100%)' 
+        background: isWarping
+          ? 'radial-gradient(circle at center, #F4A261 0%, #C85A32 40%, #1A2340 100%)'
           : 'rgba(26, 18, 14, 0.88)',
         display: 'flex',
         flexDirection: 'column',
@@ -73,13 +88,13 @@ export const SpinningTopPortal: React.FC<SpinningTopPortalProps> = ({
         color: '#FFF',
         userSelect: 'none'
       }}
-      onMouseUp={handleMouseUp}
-      onTouchEnd={handleMouseUp}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
     >
       {/* Top Vortex Animation when Warping */}
       {isWarping ? (
         <div style={{ textAlign: 'center', animation: 'warpPulse 1.2s infinite' }}>
-          <div 
+          <div
             style={{
               width: '180px',
               height: '180px',
@@ -103,7 +118,7 @@ export const SpinningTopPortal: React.FC<SpinningTopPortalProps> = ({
           </p>
         </div>
       ) : (
-        <div 
+        <div
           style={{
             maxWidth: '460px',
             width: '90%',
@@ -129,20 +144,20 @@ export const SpinningTopPortal: React.FC<SpinningTopPortalProps> = ({
           {/* Interactive Spinning Top Button */}
           <div style={{ margin: '24px auto', position: 'relative', width: '130px', height: '130px' }}>
             <button
-              onMouseDown={handleMouseDown}
-              onTouchStart={handleMouseDown}
+              onPointerDown={handlePointerDown}
               style={{
                 width: '100%',
                 height: '100%',
                 borderRadius: '50%',
-                background: isHolding 
-                  ? 'radial-gradient(circle, #E76F51, #B22222)' 
+                background: isHolding
+                  ? 'radial-gradient(circle, #E76F51, #B22222)'
                   : 'radial-gradient(circle, #E9B44C, #C85A32)',
                 border: '4px solid #FFF',
-                boxShadow: isHolding 
-                  ? '0 0 30px #E76F51, inset 0 0 15px rgba(0,0,0,0.3)' 
+                boxShadow: isHolding
+                  ? '0 0 30px #E76F51, inset 0 0 15px rgba(0,0,0,0.3)'
                   : '0 6px 16px rgba(0,0,0,0.25)',
                 cursor: 'pointer',
+                touchAction: 'none',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -162,19 +177,19 @@ export const SpinningTopPortal: React.FC<SpinningTopPortalProps> = ({
               <span>{spinPower}%</span>
             </div>
             <div style={{ width: '100%', height: '12px', background: '#E2D7C4', borderRadius: '6px', overflow: 'hidden' }}>
-              <div 
-                style={{ 
-                  width: `${spinPower}%`, 
-                  height: '100%', 
-                  background: spinPower >= 40 
-                    ? 'linear-gradient(90deg, #4CAF50, #8BC34A)' 
+              <div
+                style={{
+                  width: `${spinPower}%`,
+                  height: '100%',
+                  background: spinPower >= MIN_SPIN_POWER
+                    ? 'linear-gradient(90deg, #4CAF50, #8BC34A)'
                     : 'linear-gradient(90deg, #E9B44C, #E76F51)',
                   transition: 'width 0.05s linear'
-                }} 
+                }}
               />
             </div>
-            <div style={{ fontSize: '11px', color: spinPower >= 40 ? '#2E7D32' : '#888', marginTop: '4px', fontWeight: 600 }}>
-              {spinPower >= 40 ? '✓ Ready! Release to launch portal!' : 'Press & hold to build power (min 40%)'}
+            <div style={{ fontSize: '11px', color: spinPower >= MIN_SPIN_POWER ? '#2E7D32' : '#888', marginTop: '4px', fontWeight: 600 }}>
+              {spinPower >= MIN_SPIN_POWER ? '✓ Ready! Release to launch portal!' : 'Press & hold to build power (min 40%)'}
             </div>
           </div>
 
@@ -184,14 +199,14 @@ export const SpinningTopPortal: React.FC<SpinningTopPortalProps> = ({
                 Cancel
               </button>
             )}
-            <button 
-              className="btn-primary" 
+            <button
+              className="btn-primary"
               style={{ fontSize: '13px' }}
               onClick={() => {
+                if (hasLaunchedRef.current) return;
                 setSpinPower(100);
                 sound.playTopSpin();
-                setIsWarping(true);
-                setTimeout(onTransitionComplete, 1400);
+                launchPortal(1400);
               }}
             >
               Quick Spin &amp; Enter

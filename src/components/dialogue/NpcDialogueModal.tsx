@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useGameStore } from '../../store/useGameStore';
 import npcsData from '../../content/npcs.json';
 import questionsData from '../../content/questions.json';
 import foodsData from '../../content/foods.json';
 import { sound } from '../../utils/audio';
 import { X, Trophy, Ship } from 'lucide-react';
+import { usePauseWhile } from '../../hooks/usePauseWhile';
 
 interface NpcDialogueModalProps {
   npcId: string;
@@ -25,6 +26,12 @@ export const NpcDialogueModal: React.FC<NpcDialogueModalProps> = ({
   const executeBarter = useGameStore((state) => state.executeBarter);
   const answerCheckpointQuestion = useGameStore((state) => state.answerCheckpointQuestion);
   const answeredQuestions = useGameStore((state) => state.answeredQuestions);
+  const talkToNpc = useGameStore((state) => state.talkToNpc);
+
+  usePauseWhile(true);
+  useEffect(() => {
+    talkToNpc(npcId);
+  }, [npcId, talkToNpc]);
 
   const npc = npcsData.find((n) => n.id === npcId);
   const question = questionsData.find((q) => q.id === npc?.checkpointQuestionId);

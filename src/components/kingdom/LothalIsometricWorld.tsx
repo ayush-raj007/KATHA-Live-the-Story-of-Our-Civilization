@@ -1,16 +1,17 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { useGameStore } from '../../store/useGameStore';
+import type { MiniGameRecord, PlayerPosition } from '../../types/game';
 import npcsData from '../../content/npcs.json';
 import kingdomsData from '../../content/kingdoms.json';
 import { sound } from '../../utils/audio';
-import { 
-  Compass, 
-  MessageSquare, 
-  Trophy, 
-  Footprints, 
-  ArrowUp, 
-  ArrowDown, 
-  ArrowLeft, 
+import {
+  Compass,
+  MessageSquare,
+  Trophy,
+  Footprints,
+  ArrowUp,
+  ArrowDown,
+  ArrowLeft,
   ArrowRight,
   Ship
 } from 'lucide-react';
@@ -21,42 +22,373 @@ interface LothalWorldProps {
   onOpenCargoDecision?: () => void;
 }
 
+// World coordinates: all drawing and positions use this logical 760x560 space.
+const WORLD_WIDTH = 760;
+const WORLD_HEIGHT = 560;
+const BOUNDS = { minX: 80, maxX: 680, minY: 90, maxY: 520 };
+const FRAME_MS = 1000 / 60; // speeds below are per 60fps frame
+const WALK_SPEED = 3.5;
+const LOW_URJA_WALK_SPEED = 2.2; // -30% when Urja is low
+const MAX_FRAME_DT_MS = 50; // avoid a huge jump after a stalled/background frame
+const COMPANION_FOLLOW = 0.12; // fraction of the gap closed per 60fps frame
+const NPC_TALK_RADIUS = 60;
+const NPC_CLICK_RADIUS = 42;
+const SHIP_POS = { x: 150, y: 310 };
+const SHIP_NEARBY_RADIUS = 90;
+const SHIP_CLICK_RADIUS = 65;
+const CANVAS_BORDER_PX = 4;
+const TERRACOTTA_DARK = '#8D3B1B'; // var(--terracotta-dark)
+
+const LOTHAL = kingdomsData.find((k) => k.id === 'lothal') || kingdomsData[0];
+const LOTHAL_NPCS = npcsData.filter((npc) => npc.kingdom === 'lothal');
+
+const MOVE_KEYS = {
+  up: ['arrowup', 'w'],
+  down: ['arrowdown', 's'],
+  left: ['arrowleft', 'a'],
+  right: ['arrowright', 'd']
+};
+
+const clampX = (x: number) => Math.max(BOUNDS.minX, Math.min(BOUNDS.maxX, x));
+const clampY = (y: number) => Math.max(BOUNDS.minY, Math.min(BOUNDS.maxY, y));
+
+interface WorldView {
+  player: { x: number; y: number };
+  companion: { x: number; y: number };
+  isMoving: boolean;
+  nearbyNpcId: string | null;
+  language: 'en' | 'hi';
+  miniGameRecords: Record<string, MiniGameRecord>;
+}
+
+// Main 2.5D Canvas Render Routine (drawn in world coordinates)
+const drawWorld = (ctx: CanvasRenderingContext2D, view: WorldView, now: number) => {
+  const width = WORLD_WIDTH;
+  const height = WORLD_HEIGHT;
+
+  // Clear background: Sandy terracotta earth ground
+  ctx.fillStyle = '#EBDCC9';
+  ctx.fillRect(0, 0, width, height);
+
+  // Draw Baked-Brick Grid Street Pavements
+  ctx.strokeStyle = '#D9C5AF';
+  ctx.lineWidth = 1;
+  const gridSize = 40;
+  ctx.beginPath();
+  for (let x = 0; x < width; x += gridSize) {
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, height);
+  }
+  for (let y = 0; y < height; y += gridSize) {
+    ctx.moveTo(0, y);
+    ctx.lineTo(width, y);
+  }
+  ctx.stroke();
+
+  // ==========================================
+  // ZONE 1: TIDAL DOCKYARD & BASIN (South-West)
+  // ==========================================
+  // Basin Water (Deep Azure / Silt Blue)
+  ctx.fillStyle = '#4A7C94';
+  ctx.fillRect(50, 220, 210, 180);
+  // Water Ripples
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+  ctx.lineWidth = 1.5;
+  const time = now * 0.002;
+  for (let r = 0; r < 4; r++) {
+    ctx.beginPath();
+    const waveY = 250 + r * 35 + Math.sin(time + r) * 4;
+    ctx.moveTo(70, waveY);
+    ctx.bezierCurveTo(120, waveY - 6, 170, waveY + 6, 230, waveY);
+    ctx.stroke();
+  }
+
+  // Baked-Brick Wharf Walls (Terracotta Masonry)
+  ctx.fillStyle = '#C85A32';
+  ctx.fillRect(40, 210, 230, 14); // North wall
+  ctx.fillRect(40, 396, 230, 14); // South wall
+  ctx.fillRect(40, 210, 14, 200); // West inlet
+  ctx.fillRect(256, 210, 14, 200); // East wharf platform
+
+  // Wooden Sluice Gate
+  ctx.fillStyle = '#795548';
+  ctx.fillRect(44, 280, 12, 60);
+
+  // Moored Trade Ship (Seafaring Dhow)
+  ctx.fillStyle = '#8D6E63';
+  ctx.beginPath();
+  ctx.ellipse(150, 310, 50, 18, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#FAF0E6';
+  // Canvas Sail
+  ctx.beginPath();
+  ctx.moveTo(150, 305);
+  ctx.lineTo(170, 260);
+  ctx.lineTo(135, 285);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = '#D7CCC8';
+  ctx.font = '10px sans-serif';
+  ctx.fillText('⛵ Sagar Doot', 115, 335);
+
+  // ==========================================
+  // ZONE 2: BEAD KILN & WORKSHOP (North-East)
+  // ==========================================
+  // Workshop Foundation Floor
+  ctx.fillStyle = '#E0A96D';
+  ctx.fillRect(410, 100, 240, 160);
+  ctx.strokeStyle = '#8D3B1B';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(410, 100, 240, 160);
+
+  // Underground Bead Kiln (Circular Earthen Furnace with Glowing Embers)
+  ctx.fillStyle = '#8D3B1B';
+  ctx.beginPath();
+  ctx.arc(580, 150, 28, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#E65100';
+  ctx.beginPath();
+  ctx.arc(580, 150, 18 + Math.sin(time * 3) * 2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#FFD54F';
+  ctx.beginPath();
+  ctx.arc(580, 150, 8, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Bead Drilling Workbenches & Agate Nodules
+  ctx.fillStyle = '#A1887F';
+  ctx.fillRect(440, 180, 45, 24);
+  ctx.fillStyle = '#D9383A'; // Red carnelian beads
+  ctx.beginPath();
+  ctx.arc(450, 192, 4, 0, Math.PI * 2);
+  ctx.arc(462, 192, 4, 0, Math.PI * 2);
+  ctx.arc(474, 192, 4, 0, Math.PI * 2);
+  ctx.fill();
+
+  // ==========================================
+  // ZONE 3: ACRO-GRANARY & SEALS BUREAU (South)
+  // ==========================================
+  // Raised Mud-Brick Podium (4m Elevated Acropolis)
+  ctx.fillStyle = '#D7C4A5';
+  ctx.fillRect(260, 360, 260, 140);
+  // Platform Elevation Shadow
+  ctx.fillStyle = 'rgba(78, 52, 46, 0.25)';
+  ctx.fillRect(260, 495, 260, 12);
+
+  // 4 Granary Storage Blocks
+  ctx.fillStyle = '#BCAAA4';
+  ctx.fillRect(280, 380, 45, 45);
+  ctx.fillRect(340, 380, 45, 45);
+  ctx.fillRect(400, 380, 45, 45);
+  ctx.fillRect(460, 380, 45, 45);
+  ctx.fillStyle = '#5D4037';
+  ctx.font = '10px sans-serif';
+  ctx.fillText('Granary', 282, 410);
+
+  // ==========================================
+  // COVERED BRICK SEWER DRAINS (Lothal Sanitary)
+  // ==========================================
+  ctx.fillStyle = '#8D7B68';
+  ctx.fillRect(310, 0, 18, height);
+  ctx.fillStyle = '#5D4037';
+  for (let dy = 15; dy < height; dy += 35) {
+    ctx.fillRect(312, dy, 14, 5); // Brick inspection covers
+  }
+
+  // ==========================================
+  // DRAW NPCS
+  // ==========================================
+  LOTHAL_NPCS.forEach((npc) => {
+    const { x, y } = npc.isometricPos;
+    const isNearby = view.nearbyNpcId === npc.id;
+
+    // Aura if champion
+    if (npc.isMiniGameChampion) {
+      ctx.fillStyle = 'rgba(233, 180, 76, 0.35)';
+      ctx.beginPath();
+      ctx.arc(x, y, 26, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // NPC Shadow
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+    ctx.beginPath();
+    ctx.ellipse(x, y + 10, 14, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // NPC Sprite Avatar
+    ctx.font = '24px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(npc.avatar, x, y + 6);
+
+    // Name & Role Tag
+    ctx.fillStyle = '#2C1810';
+    ctx.font = 'bold 11px sans-serif';
+    ctx.fillText(npc.name[view.language], x, y - 22);
+
+    // Mini-game champion badge & stars
+    if (npc.miniGameId) {
+      const rec = view.miniGameRecords[npc.miniGameId];
+      const stars = rec ? '⭐'.repeat(rec.stars) : '';
+      if (stars) {
+        ctx.font = '10px sans-serif';
+        ctx.fillText(stars, x, y - 36);
+      }
+    }
+
+    // Interaction Prompt Bubble when close
+    if (isNearby) {
+      ctx.fillStyle = TERRACOTTA_DARK;
+      ctx.beginPath();
+      ctx.roundRect(x - 48, y - 48, 96, 20, 6);
+      ctx.fill();
+      ctx.fillStyle = '#FFF';
+      ctx.font = 'bold 10px sans-serif';
+      ctx.fillText('Press E / Tap', x, y - 34);
+    }
+  });
+
+  // ==========================================
+  // DRAW COMPANION (Terracotta Bull on Wheels)
+  // ==========================================
+  const cx = view.companion.x;
+  const cy = view.companion.y;
+
+  // Companion Shadow
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + 8, 12, 5, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Terracotta Wheels
+  ctx.fillStyle = '#A04000';
+  ctx.beginPath();
+  ctx.arc(cx - 8, cy + 6, 4.5, 0, Math.PI * 2);
+  ctx.arc(cx + 8, cy + 6, 4.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Terracotta Bull Body
+  ctx.font = '22px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('🐂', cx, cy + 4);
+
+  // Companion Little Whirring Wheels / Dust particles when moving
+  if (view.isMoving) {
+    ctx.fillStyle = 'rgba(215, 196, 165, 0.6)';
+    ctx.beginPath();
+    ctx.arc(cx - 12 + Math.random() * 4, cy + 6, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // ==========================================
+  // DRAW PLAYER: YATRI
+  // ==========================================
+  const px = view.player.x;
+  const py = view.player.y;
+
+  // Player Shadow
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+  ctx.beginPath();
+  ctx.ellipse(px, py + 12, 16, 7, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Yatri Character Sprite
+  ctx.font = '26px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('🧑‍🌾', px, py + 8);
+
+  // Player Spinning Top (Lattu on belt)
+  ctx.fillStyle = '#B22222';
+  ctx.beginPath();
+  ctx.arc(px + 10, py + 2, 4, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Name tag
+  ctx.fillStyle = '#1D2D50';
+  ctx.font = 'bold 11px sans-serif';
+  ctx.fillText('Yatri', px, py - 18);
+};
+
+const CENTRAL_ZONE = -1;
+const FALLBACK_ZONE_NAMES = ['Tidal Basin & Wharf', 'Bead Kiln & Workshop', 'Acro-Granary & Seals Bureau'];
+
+// Index into LOTHAL.zones for a world position, or CENTRAL_ZONE
+const getZoneIndex = (px: number, py: number) => {
+  if (px < 280 && py > 200) return 0;
+  if (px > 400 && py < 300) return 1;
+  if (py > 360) return 2;
+  return CENTRAL_ZONE;
+};
+
+const getZoneName = (zoneIndex: number, language: 'en' | 'hi') => {
+  if (zoneIndex === CENTRAL_ZONE) return language === 'en' ? 'Central Brick Thoroughfare' : 'केंद्रीय पक्की सड़क';
+  return LOTHAL.zones[zoneIndex]?.name[language] || FALLBACK_ZONE_NAMES[zoneIndex];
+};
+
+// Fit the 760x560 world (keeping its aspect ratio) into the free box between the
+// HUD/overlays and the bottom controls. It grows on large screens such as 4K.
+const fitCanvas = (boxWidth: number, boxHeight: number) => {
+  const availW = boxWidth - CANVAS_BORDER_PX * 2;
+  const availH = boxHeight - CANVAS_BORDER_PX * 2;
+  const scale = Math.max(0.1, Math.min(availW / WORLD_WIDTH, availH / WORLD_HEIGHT));
+  return { width: Math.round(WORLD_WIDTH * scale), height: Math.round(WORLD_HEIGHT * scale) };
+};
+
 export const LothalIsometricWorld: React.FC<LothalWorldProps> = ({
   onInteractNpc,
   onEnterMiniGame,
   onOpenCargoDecision
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const canvasBoxRef = useRef<HTMLDivElement | null>(null);
+  const minimapPinRef = useRef<HTMLDivElement | null>(null);
 
   const isLowUrja = useGameStore((state) => state.isLowUrja);
-  const playerPosition = useGameStore((state) => state.playerPosition);
   const setPlayerPosition = useGameStore((state) => state.setPlayerPosition);
   const language = useGameStore((state) => state.language);
   const soundEnabled = useGameStore((state) => state.soundEnabled);
   const miniGameRecords = useGameStore((state) => state.miniGameRecords);
-  const isPaused = useGameStore((state) => state.isPaused);
+  const isPaused = useGameStore((state) => state.isPaused || state.overlayCount > 0);
 
-  // Companion follower coordinates (lagging smooth follow)
-  const [companionPos, setCompanionPos] = useState({ x: 300, y: 290 });
+  // Position is read once on mount; afterwards the game loop owns it (in refs) and
+  // syncs it back to the store when the player stops, avoiding a React render per frame.
+  const [initialPosition] = useState<PlayerPosition>(() => useGameStore.getState().playerPosition);
+
   const [activeNearbyNpc, setActiveNearbyNpc] = useState<string | null>(null);
   const [activeNearbyGame, setActiveNearbyGame] = useState<string | null>(null);
   const [isNearShip, setIsNearShip] = useState<boolean>(false);
-  const [activeZoneName, setActiveZoneName] = useState<string>('Lothal Lower Town');
+  const [zoneIndex, setZoneIndex] = useState(() => getZoneIndex(initialPosition.x, initialPosition.y));
+  const activeZoneName = getZoneName(zoneIndex, language);
+  const [canvasSize, setCanvasSize] = useState({ width: WORLD_WIDTH, height: WORLD_HEIGHT });
 
-  // Input keys
-  const keysPressed = useRef<{ [key: string]: boolean }>({});
+  // Mutable game-loop state
+  const player = useRef({ ...initialPosition });
+  const companion = useRef({ x: initialPosition.x - 20, y: initialPosition.y + 10 });
+  const moveTarget = useRef<{ x: number; y: number } | null>(null);
+  const keysPressed = useRef<Record<string, boolean>>({});
 
-  const lothal = kingdomsData.find((k) => k.id === 'lothal') || kingdomsData[0];
-  const lothalNpcs = npcsData.filter((npc) => npc.kingdom === 'lothal');
+  // Latest props/state for the loop and listeners, which are registered once
+  const live = useRef({ isPaused, isLowUrja, language, soundEnabled, miniGameRecords, activeNearbyNpc, onInteractNpc });
+  useEffect(() => {
+    live.current = { isPaused, isLowUrja, language, soundEnabled, miniGameRecords, activeNearbyNpc, onInteractNpc };
+  });
 
-  // Check proximity to NPCs, ship, and mini-game stations
-  const checkProximities = useCallback((px: number, py: number) => {
+  // Release held keys and stop walking whenever gameplay pauses
+  useEffect(() => {
+    if (isPaused) {
+      keysPressed.current = {};
+      moveTarget.current = null;
+    }
+  }, [isPaused]);
+
+  // Check proximity to NPCs, ship, and mini-game stations (state only changes on transitions)
+  const checkProximities = (px: number, py: number) => {
     let nearbyNpc: string | null = null;
     let nearbyGame: string | null = null;
 
-    lothalNpcs.forEach((npc) => {
+    LOTHAL_NPCS.forEach((npc) => {
       const dist = Math.hypot(px - npc.isometricPos.x, py - npc.isometricPos.y);
-      if (dist < 60) {
+      if (dist < NPC_TALK_RADIUS) {
         nearbyNpc = npc.id;
         if (npc.miniGameId) {
           nearbyGame = npc.miniGameId;
@@ -66,34 +398,43 @@ export const LothalIsometricWorld: React.FC<LothalWorldProps> = ({
 
     setActiveNearbyNpc(nearbyNpc);
     setActiveNearbyGame(nearbyGame);
+    setIsNearShip(Math.hypot(px - SHIP_POS.x, py - SHIP_POS.y) < SHIP_NEARBY_RADIUS);
+    setZoneIndex(getZoneIndex(px, py));
+  };
+  const checkProximitiesRef = useRef(checkProximities);
+  useEffect(() => {
+    checkProximitiesRef.current = checkProximities;
+  });
 
-    // Check proximity to the docked ship Sagar Doot (x: 150, y: 310)
-    const distToShip = Math.hypot(px - 150, py - 310);
-    setIsNearShip(distToShip < 90);
+  // Keep the canvas fitted to its box as the window (or HUD height) changes
+  useEffect(() => {
+    const box = canvasBoxRef.current;
+    if (!box) return;
+    const fit = () => setCanvasSize(fitCanvas(box.clientWidth, box.clientHeight));
+    const observer = new ResizeObserver(fit);
+    observer.observe(box);
+    return () => observer.disconnect();
+  }, []);
 
-    // Identify active zone
-    if (px < 280 && py > 200) {
-      setActiveZoneName(lothal.zones[0]?.name[language] || 'Tidal Basin & Wharf');
-    } else if (px > 400 && py < 300) {
-      setActiveZoneName(lothal.zones[1]?.name[language] || 'Bead Kiln & Workshop');
-    } else if (py > 360) {
-      setActiveZoneName(lothal.zones[2]?.name[language] || 'Acro-Granary & Seals Bureau');
-    } else {
-      setActiveZoneName(language === 'en' ? 'Central Brick Thoroughfare' : 'केंद्रीय पक्की सड़क');
-    }
-  }, [lothal, lothalNpcs, language]);
+  // Backing store sized for the device pixel ratio so the world is crisp on HiDPI screens
+  const dpr = window.devicePixelRatio || 1;
 
   // Handle keyboard inputs
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (isPaused) return;
-      keysPressed.current[e.key.toLowerCase()] = true;
+      const { isPaused: paused, activeNearbyNpc: nearbyNpc, soundEnabled: soundOn } = live.current;
+      if (paused) return;
+      const key = e.key.toLowerCase();
+      keysPressed.current[key] = true;
+      if (Object.values(MOVE_KEYS).some((keys) => keys.includes(key))) {
+        moveTarget.current = null;
+      }
 
       // Interaction shortcut: E or Space or Enter
-      if ((e.key.toLowerCase() === 'e' || e.key === ' ' || e.key === 'Enter') && activeNearbyNpc) {
+      if ((key === 'e' || e.key === ' ' || e.key === 'Enter') && nearbyNpc && !e.repeat) {
         e.preventDefault();
-        if (soundEnabled) sound.playClick();
-        onInteractNpc(activeNearbyNpc);
+        if (soundOn) sound.playClick();
+        live.current.onInteractNpc(nearbyNpc);
       }
     };
 
@@ -101,343 +442,154 @@ export const LothalIsometricWorld: React.FC<LothalWorldProps> = ({
       keysPressed.current[e.key.toLowerCase()] = false;
     };
 
+    // Key-up events are lost when the window loses focus, which left the player walking.
+    const releaseAllKeys = () => {
+      keysPressed.current = {};
+    };
+    const handleVisibility = () => {
+      if (document.hidden) releaseAllKeys();
+    };
+
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
+    window.addEventListener('blur', releaseAllKeys);
+    document.addEventListener('visibilitychange', handleVisibility);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener('blur', releaseAllKeys);
+      document.removeEventListener('visibilitychange', handleVisibility);
     };
-  }, [activeNearbyNpc, onInteractNpc, soundEnabled, isPaused]);
+  }, []);
 
-  // Game update loop
+  // Game update loop (registered once; uses delta time so speed is independent of refresh rate)
   useEffect(() => {
-    let animId: number;
+    let animId = 0;
+    let lastTime = performance.now();
+    let wasMoving = false;
+    const pos = player.current;
+    const comp = companion.current;
 
-    const gameLoop = () => {
-      if (!isPaused) {
-        // Calculate speed (walk speed -30% when low energy <25)
-        const baseSpeed = isLowUrja ? 2.2 : 3.5;
+    checkProximitiesRef.current(pos.x, pos.y);
+
+    const isHeld = (keys: string[]) => keys.some((k) => keysPressed.current[k]);
+
+    const gameLoop = (now: number) => {
+      const dt = Math.min(MAX_FRAME_DT_MS, now - lastTime);
+      lastTime = now;
+      const frames = dt / FRAME_MS;
+      const { isPaused: paused, isLowUrja: lowUrja } = live.current;
+      let isMoving = false;
+
+      if (!paused) {
+        const speed = (lowUrja ? LOW_URJA_WALK_SPEED : WALK_SPEED) * frames;
         let dx = 0;
         let dy = 0;
 
-        if (keysPressed.current['arrowup'] || keysPressed.current['w']) dy -= baseSpeed;
-        if (keysPressed.current['arrowdown'] || keysPressed.current['s']) dy += baseSpeed;
-        if (keysPressed.current['arrowleft'] || keysPressed.current['a']) dx -= baseSpeed;
-        if (keysPressed.current['arrowright'] || keysPressed.current['d']) dx += baseSpeed;
+        if (isHeld(MOVE_KEYS.up)) dy -= 1;
+        if (isHeld(MOVE_KEYS.down)) dy += 1;
+        if (isHeld(MOVE_KEYS.left)) dx -= 1;
+        if (isHeld(MOVE_KEYS.right)) dx += 1;
+
+        const target = moveTarget.current;
+        if (dx === 0 && dy === 0 && target) {
+          // Walk towards a clicked point
+          const tx = target.x - pos.x;
+          const ty = target.y - pos.y;
+          const dist = Math.hypot(tx, ty);
+          if (dist <= speed) {
+            dx = tx;
+            dy = ty;
+            moveTarget.current = null;
+          } else {
+            dx = (tx / dist) * speed;
+            dy = (ty / dist) * speed;
+          }
+        } else if (dx !== 0 || dy !== 0) {
+          // Normalize diagonal
+          const len = Math.hypot(dx, dy);
+          dx = (dx / len) * speed;
+          dy = (dy / len) * speed;
+        }
 
         if (dx !== 0 || dy !== 0) {
-          // Normalize diagonal
-          if (dx !== 0 && dy !== 0) {
-            dx *= 0.707;
-            dy *= 0.707;
-          }
+          const newX = clampX(pos.x + dx);
+          const newY = clampY(pos.y + dy);
+          isMoving = newX !== pos.x || newY !== pos.y;
+          if (!isMoving) moveTarget.current = null; // pushing against the edge
 
-          const newX = Math.max(80, Math.min(680, playerPosition.x + dx));
-          const newY = Math.max(90, Math.min(520, playerPosition.y + dy));
-
-          let dir = playerPosition.direction;
-          if (dx > 0) dir = 'E';
-          else if (dx < 0) dir = 'W';
-          else if (dy > 0) dir = 'S';
-          else if (dy < 0) dir = 'N';
-
-          setPlayerPosition({ x: newX, y: newY, direction: dir, isMoving: true });
+          if (Math.abs(dx) >= Math.abs(dy)) pos.direction = dx > 0 ? 'E' : 'W';
+          else pos.direction = dy > 0 ? 'S' : 'N';
 
           // Companion smooth trailing follow
-          setCompanionPos((prev) => {
-            const targetX = newX - (dx !== 0 ? Math.sign(dx) * 35 : 0);
-            const targetY = newY - (dy !== 0 ? Math.sign(dy) * 35 : 25);
-            return {
-              x: prev.x + (targetX - prev.x) * 0.12,
-              y: prev.y + (targetY - prev.y) * 0.12
-            };
-          });
+          const targetX = newX - (dx !== 0 ? Math.sign(dx) * 35 : 0);
+          const targetY = newY - (dy !== 0 ? Math.sign(dy) * 35 : 25);
+          const follow = 1 - Math.pow(1 - COMPANION_FOLLOW, frames);
+          comp.x += (targetX - comp.x) * follow;
+          comp.y += (targetY - comp.y) * follow;
 
-          checkProximities(newX, newY);
-        } else {
-          if (playerPosition.isMoving) {
-            setPlayerPosition({ isMoving: false });
-          }
+          pos.x = newX;
+          pos.y = newY;
         }
       }
+      pos.isMoving = isMoving;
+
+      if (isMoving) {
+        checkProximitiesRef.current(pos.x, pos.y);
+        const pin = minimapPinRef.current;
+        if (pin) {
+          pin.style.left = `${(pos.x / WORLD_WIDTH) * 100}%`;
+          pin.style.top = `${(pos.y / WORLD_HEIGHT) * 100}%`;
+        }
+      } else if (wasMoving) {
+        setPlayerPosition({ ...pos });
+      }
+      wasMoving = isMoving;
 
       // Render 2.5D Isometric World Canvas
-      renderCanvas();
+      const canvas = canvasRef.current;
+      const ctx = canvas?.getContext('2d');
+      if (canvas && ctx) {
+        ctx.setTransform(canvas.width / WORLD_WIDTH, 0, 0, canvas.height / WORLD_HEIGHT, 0, 0);
+        const { language: lang, miniGameRecords: records, activeNearbyNpc: nearby } = live.current;
+        drawWorld(ctx, {
+          player: pos,
+          companion: comp,
+          isMoving,
+          nearbyNpcId: nearby,
+          language: lang,
+          miniGameRecords: records
+        }, Date.now());
+      }
       animId = requestAnimationFrame(gameLoop);
     };
 
     animId = requestAnimationFrame(gameLoop);
-    return () => cancelAnimationFrame(animId);
-  }, [playerPosition, isLowUrja, isPaused, checkProximities, setPlayerPosition]);
+    return () => {
+      cancelAnimationFrame(animId);
+      setPlayerPosition({ ...pos, isMoving: false });
+    };
+  }, [setPlayerPosition]);
 
-  // Main 2.5D Canvas Render Routine
-  const renderCanvas = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const width = canvas.width;
-    const height = canvas.height;
-
-    // Clear background: Sandy terracotta earth ground
-    ctx.fillStyle = '#EBDCC9';
-    ctx.fillRect(0, 0, width, height);
-
-    // Draw Baked-Brick Grid Street Pavements
-    ctx.strokeStyle = '#D9C5AF';
-    ctx.lineWidth = 1;
-    const gridSize = 40;
-    for (let x = 0; x < width; x += gridSize) {
-      ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, height);
-      ctx.stroke();
+  // Virtual D-pad: press and hold to walk (touch, pen or mouse)
+  const dpadHandlers = (key: string) => ({
+    onPointerDown: (e: React.PointerEvent<HTMLButtonElement>) => {
+      if (isPaused) return;
+      e.currentTarget.setPointerCapture?.(e.pointerId);
+      moveTarget.current = null;
+      keysPressed.current[key] = true;
+    },
+    onPointerUp: () => { keysPressed.current[key] = false; },
+    onPointerCancel: () => { keysPressed.current[key] = false; },
+    onLostPointerCapture: () => { keysPressed.current[key] = false; },
+    // Keyboard activation of a D-pad button (click with no pointer) takes a single step
+    onClick: (e: React.MouseEvent<HTMLButtonElement>) => {
+      if (e.detail !== 0 || isPaused) return;
+      const [dx, dy] = key === 'arrowup' ? [0, -1] : key === 'arrowdown' ? [0, 1] : key === 'arrowleft' ? [-1, 0] : [1, 0];
+      const step = (isLowUrja ? LOW_URJA_WALK_SPEED : WALK_SPEED) * 3;
+      moveTarget.current = { x: clampX(player.current.x + dx * step), y: clampY(player.current.y + dy * step) };
     }
-    for (let y = 0; y < height; y += gridSize) {
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(width, y);
-      ctx.stroke();
-    }
-
-    // ==========================================
-    // ZONE 1: TIDAL DOCKYARD & BASIN (South-West)
-    // ==========================================
-    // Basin Water (Deep Azure / Silt Blue)
-    ctx.fillStyle = '#4A7C94';
-    ctx.fillRect(50, 220, 210, 180);
-    // Water Ripples
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-    ctx.lineWidth = 1.5;
-    const time = Date.now() * 0.002;
-    for (let r = 0; r < 4; r++) {
-      ctx.beginPath();
-      const waveY = 250 + r * 35 + Math.sin(time + r) * 4;
-      ctx.moveTo(70, waveY);
-      ctx.bezierCurveTo(120, waveY - 6, 170, waveY + 6, 230, waveY);
-      ctx.stroke();
-    }
-
-    // Baked-Brick Wharf Walls (Terracotta Masonry)
-    ctx.fillStyle = '#C85A32';
-    ctx.fillRect(40, 210, 230, 14); // North wall
-    ctx.fillRect(40, 396, 230, 14); // South wall
-    ctx.fillRect(40, 210, 14, 200); // West inlet
-    ctx.fillRect(256, 210, 14, 200); // East wharf platform
-
-    // Wooden Sluice Gate
-    ctx.fillStyle = '#795548';
-    ctx.fillRect(44, 280, 12, 60);
-
-    // Moored Trade Ship (Seafaring Dhow)
-    ctx.fillStyle = '#8D6E63';
-    ctx.beginPath();
-    ctx.ellipse(150, 310, 50, 18, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#FAF0E6';
-    // Canvas Sail
-    ctx.beginPath();
-    ctx.moveTo(150, 305);
-    ctx.lineTo(170, 260);
-    ctx.lineTo(135, 285);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle = '#D7CCC8';
-    ctx.font = '10px sans-serif';
-    ctx.fillText('⛵ Sagar Doot', 115, 335);
-
-    // ==========================================
-    // ZONE 2: BEAD KILN & WORKSHOP (North-East)
-    // ==========================================
-    // Workshop Foundation Floor
-    ctx.fillStyle = '#E0A96D';
-    ctx.fillRect(410, 100, 240, 160);
-    ctx.strokeStyle = '#8D3B1B';
-    ctx.lineWidth = 3;
-    ctx.strokeRect(410, 100, 240, 160);
-
-    // Underground Bead Kiln (Circular Earthen Furnace with Glowing Embers)
-    ctx.fillStyle = '#8D3B1B';
-    ctx.beginPath();
-    ctx.arc(580, 150, 28, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#E65100';
-    ctx.beginPath();
-    ctx.arc(580, 150, 18 + Math.sin(time * 3) * 2, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#FFD54F';
-    ctx.beginPath();
-    ctx.arc(580, 150, 8, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Bead Drilling Workbenches & Agate Nodules
-    ctx.fillStyle = '#A1887F';
-    ctx.fillRect(440, 180, 45, 24);
-    ctx.fillStyle = '#D9383A'; // Red carnelian beads
-    ctx.beginPath();
-    ctx.arc(450, 192, 4, 0, Math.PI * 2);
-    ctx.arc(462, 192, 4, 0, Math.PI * 2);
-    ctx.arc(474, 192, 4, 0, Math.PI * 2);
-    ctx.fill();
-
-    // ==========================================
-    // ZONE 3: ACRO-GRANARY & SEALS BUREAU (South)
-    // ==========================================
-    // Raised Mud-Brick Podium (4m Elevated Acropolis)
-    ctx.fillStyle = '#D7C4A5';
-    ctx.fillRect(260, 360, 260, 140);
-    // Platform Elevation Shadow
-    ctx.fillStyle = 'rgba(78, 52, 46, 0.25)';
-    ctx.fillRect(260, 495, 260, 12);
-
-    // 4 Granary Storage Blocks
-    ctx.fillStyle = '#BCAAA4';
-    ctx.fillRect(280, 380, 45, 45);
-    ctx.fillRect(340, 380, 45, 45);
-    ctx.fillRect(400, 380, 45, 45);
-    ctx.fillRect(460, 380, 45, 45);
-    ctx.fillStyle = '#5D4037';
-    ctx.font = '10px sans-serif';
-    ctx.fillText('Granary', 282, 410);
-
-    // ==========================================
-    // COVERED BRICK SEWER DRAINS (Lothal Sanitary)
-    // ==========================================
-    ctx.fillStyle = '#8D7B68';
-    ctx.fillRect(310, 0, 18, height);
-    ctx.fillStyle = '#5D4037';
-    for (let dy = 15; dy < height; dy += 35) {
-      ctx.fillRect(312, dy, 14, 5); // Brick inspection covers
-    }
-
-    // ==========================================
-    // DRAW NPCS
-    // ==========================================
-    lothalNpcs.forEach((npc) => {
-      const { x, y } = npc.isometricPos;
-      const isNearby = activeNearbyNpc === npc.id;
-
-      // Aura if champion
-      if (npc.isMiniGameChampion) {
-        ctx.fillStyle = 'rgba(233, 180, 76, 0.35)';
-        ctx.beginPath();
-        ctx.arc(x, y, 26, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      // NPC Shadow
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
-      ctx.beginPath();
-      ctx.ellipse(x, y + 10, 14, 6, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      // NPC Sprite Avatar
-      ctx.font = '24px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(npc.avatar, x, y + 6);
-
-      // Name & Role Tag
-      ctx.fillStyle = '#2C1810';
-      ctx.font = 'bold 11px sans-serif';
-      ctx.fillText(npc.name[language], x, y - 22);
-
-      // Mini-game champion badge & stars
-      if (npc.miniGameId) {
-        const rec = miniGameRecords[npc.miniGameId];
-        const stars = rec ? '⭐'.repeat(rec.stars) : '';
-        if (stars) {
-          ctx.font = '10px sans-serif';
-          ctx.fillText(stars, x, y - 36);
-        }
-      }
-
-      // Interaction Prompt Bubble when close
-      if (isNearby) {
-        ctx.fillStyle = 'var(--terracotta-dark)';
-        ctx.beginPath();
-        ctx.roundRect(x - 48, y - 48, 96, 20, 6);
-        ctx.fill();
-        ctx.fillStyle = '#FFF';
-        ctx.font = 'bold 10px sans-serif';
-        ctx.fillText('Press E / Tap', x, y - 34);
-      }
-    });
-
-    // ==========================================
-    // DRAW COMPANION (Terracotta Bull on Wheels)
-    // ==========================================
-    const cx = companionPos.x;
-    const cy = companionPos.y;
-
-    // Companion Shadow
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
-    ctx.beginPath();
-    ctx.ellipse(cx, cy + 8, 12, 5, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Terracotta Wheels
-    ctx.fillStyle = '#A04000';
-    ctx.beginPath();
-    ctx.arc(cx - 8, cy + 6, 4.5, 0, Math.PI * 2);
-    ctx.arc(cx + 8, cy + 6, 4.5, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Terracotta Bull Body
-    ctx.font = '22px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('🐂', cx, cy + 4);
-
-    // Companion Little Whirring Wheels / Dust particles when moving
-    if (playerPosition.isMoving) {
-      ctx.fillStyle = 'rgba(215, 196, 165, 0.6)';
-      ctx.beginPath();
-      ctx.arc(cx - 12 + Math.random() * 4, cy + 6, 2.5, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // ==========================================
-    // DRAW PLAYER: YATRI
-    // ==========================================
-    const px = playerPosition.x;
-    const py = playerPosition.y;
-
-    // Player Shadow
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
-    ctx.beginPath();
-    ctx.ellipse(px, py + 12, 16, 7, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Yatri Character Sprite
-    ctx.font = '26px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('🧑‍🌾', px, py + 8);
-
-    // Player Spinning Top (Lattu on belt)
-    ctx.fillStyle = '#B22222';
-    ctx.beginPath();
-    ctx.arc(px + 10, py + 2, 4, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Name tag
-    ctx.fillStyle = '#1D2D50';
-    ctx.font = 'bold 11px sans-serif';
-    ctx.fillText('Yatri', px, py - 18);
-  };
-
-  // Touch / Virtual D-pad Movement handlers
-  const handleDirectionMove = (dx: number, dy: number) => {
-    if (isPaused) return;
-    const baseSpeed = isLowUrja ? 2.2 : 3.5;
-    const newX = Math.max(80, Math.min(680, playerPosition.x + dx * baseSpeed * 3));
-    const newY = Math.max(90, Math.min(520, playerPosition.y + dy * baseSpeed * 3));
-    setPlayerPosition({ x: newX, y: newY, isMoving: true });
-    setCompanionPos((prev) => ({
-      x: prev.x + (newX - prev.x) * 0.15,
-      y: prev.y + (newY - prev.y) * 0.15
-    }));
-    checkProximities(newX, newY);
-  };
+  });
 
   // Canvas Click-to-Move
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -445,44 +597,37 @@ export const LothalIsometricWorld: React.FC<LothalWorldProps> = ({
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
-    if (!rect || rect.width === 0 || rect.height === 0) return;
+    if (canvas.clientWidth === 0 || canvas.clientHeight === 0) return;
 
-    // Scale from CSS display coordinates to 760x560 internal canvas resolution
-    const scaleX = 760 / rect.width;
-    const scaleY = 560 / rect.height;
-    const clickX = (e.clientX - rect.left) * scaleX;
-    const clickY = (e.clientY - rect.top) * scaleY;
+    // Scale from on-screen coordinates (inside the border) to world coordinates
+    const cssScale = rect.width / canvas.offsetWidth;
+    const clickX = (e.clientX - rect.left - canvas.clientLeft * cssScale) * (WORLD_WIDTH / (canvas.clientWidth * cssScale));
+    const clickY = (e.clientY - rect.top - canvas.clientTop * cssScale) * (WORLD_HEIGHT / (canvas.clientHeight * cssScale));
 
-    // Check if clicked directly on the trade ship Sagar Doot (x: 150, y: 310)
-    if (Math.hypot(clickX - 150, clickY - 310) < 65) {
+    // Check if clicked directly on an NPC (before the ship: Marak stands inside the
+    // ship's click area, so checking the ship first made him impossible to click)
+    for (const npc of LOTHAL_NPCS) {
+      const dist = Math.hypot(clickX - npc.isometricPos.x, clickY - npc.isometricPos.y);
+      if (dist < NPC_CLICK_RADIUS) {
+        onInteractNpc(npc.id);
+        return;
+      }
+    }
+
+    // Check if clicked directly on the trade ship Sagar Doot
+    if (Math.hypot(clickX - SHIP_POS.x, clickY - SHIP_POS.y) < SHIP_CLICK_RADIUS) {
       if (onOpenCargoDecision) {
         onOpenCargoDecision();
         return;
       }
     }
 
-    // Check if clicked directly on an NPC
-    for (const npc of lothalNpcs) {
-      const dist = Math.hypot(clickX - npc.isometricPos.x, clickY - npc.isometricPos.y);
-      if (dist < 42) {
-        onInteractNpc(npc.id);
-        return;
-      }
-    }
-
     // Otherwise walk towards click target
-    const targetX = Math.max(80, Math.min(680, clickX));
-    const targetY = Math.max(90, Math.min(520, clickY));
-    setPlayerPosition({ x: targetX, y: targetY, isMoving: true });
-    setCompanionPos((prev) => ({
-      x: prev.x + (targetX - prev.x) * 0.2,
-      y: prev.y + (targetY - prev.y) * 0.2
-    }));
-    checkProximities(targetX, targetY);
+    moveTarget.current = { x: clampX(clickX), y: clampY(clickY) };
   };
 
   return (
-    <div 
+    <div
       style={{
         position: 'relative',
         width: '100%',
@@ -496,10 +641,10 @@ export const LothalIsometricWorld: React.FC<LothalWorldProps> = ({
       }}
     >
       {/* Zone Title Banner */}
-      <div 
+      <div
+        className="world-overlay-top"
         style={{
           position: 'absolute',
-          top: '74px',
           left: '20px',
           zIndex: 10,
           background: 'rgba(255, 253, 249, 0.94)',
@@ -519,10 +664,10 @@ export const LothalIsometricWorld: React.FC<LothalWorldProps> = ({
       </div>
 
       {/* Mini-Radar Map (Top-Right) */}
-      <div 
+      <div
+        className="world-overlay-top world-minimap"
         style={{
           position: 'absolute',
-          top: '74px',
           right: '20px',
           zIndex: 10,
           width: '130px',
@@ -547,13 +692,13 @@ export const LothalIsometricWorld: React.FC<LothalWorldProps> = ({
           <div style={{ position: 'absolute', left: '45px', bottom: '5px', width: '40px', height: '25px', background: '#D7C4A5', opacity: 0.6 }} />
 
           {/* NPCs on minimap */}
-          {lothalNpcs.map((npc) => (
-            <div 
+          {LOTHAL_NPCS.map((npc) => (
+            <div
               key={npc.id}
               style={{
                 position: 'absolute',
-                left: `${(npc.isometricPos.x / 760) * 100}%`,
-                top: `${(npc.isometricPos.y / 560) * 100}%`,
+                left: `${(npc.isometricPos.x / WORLD_WIDTH) * 100}%`,
+                top: `${(npc.isometricPos.y / WORLD_HEIGHT) * 100}%`,
                 width: '6px',
                 height: '6px',
                 borderRadius: '50%',
@@ -564,11 +709,12 @@ export const LothalIsometricWorld: React.FC<LothalWorldProps> = ({
           ))}
 
           {/* Player Pin */}
-          <div 
+          <div
+            ref={minimapPinRef}
             style={{
               position: 'absolute',
-              left: `${(playerPosition.x / 760) * 100}%`,
-              top: `${(playerPosition.y / 560) * 100}%`,
+              left: `${(initialPosition.x / WORLD_WIDTH) * 100}%`,
+              top: `${(initialPosition.y / WORLD_HEIGHT) * 100}%`,
               width: '8px',
               height: '8px',
               borderRadius: '50%',
@@ -581,27 +727,32 @@ export const LothalIsometricWorld: React.FC<LothalWorldProps> = ({
       </div>
 
       {/* Main 2.5D Isometric World Canvas */}
-      <canvas
-        ref={canvasRef}
-        width={760}
-        height={560}
-        onClick={handleCanvasClick}
-        style={{
-          borderRadius: '16px',
-          border: '4px solid var(--earth-border)',
-          boxShadow: 'var(--shadow-lg)',
-          cursor: 'crosshair',
-          maxWidth: '96vw',
-          maxHeight: 'calc(100vh - 160px)'
-        }}
-      />
+      <div ref={canvasBoxRef} className="world-canvas-box">
+        <canvas
+          ref={canvasRef}
+          width={Math.round(canvasSize.width * dpr)}
+          height={Math.round(canvasSize.height * dpr)}
+          onClick={handleCanvasClick}
+          style={{
+            borderRadius: '16px',
+            border: '4px solid var(--earth-border)',
+            boxShadow: 'var(--shadow-lg)',
+            cursor: 'crosshair',
+            // Display size is fitted in JS; the backing store is scaled for crisp HiDPI
+            width: `${canvasSize.width}px`,
+            height: `${canvasSize.height}px`,
+            boxSizing: 'content-box',
+            flexShrink: 0
+          }}
+        />
+      </div>
 
       {/* Bottom Proximity Interaction Bar */}
       {(activeNearbyNpc || isNearShip) && (
-        <div 
+        <div
+          className="world-action-bar"
           style={{
             position: 'absolute',
-            bottom: '76px',
             zIndex: 20,
             display: 'flex',
             gap: '12px',
@@ -616,20 +767,20 @@ export const LothalIsometricWorld: React.FC<LothalWorldProps> = ({
           }}
         >
           {activeNearbyNpc && (
-            <button 
+            <button
               className="btn-primary"
               onClick={() => onInteractNpc(activeNearbyNpc)}
               style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
             >
               <MessageSquare size={16} />
-              <span>Talk to {lothalNpcs.find((n) => n.id === activeNearbyNpc)?.name[language]}</span>
+              <span>Talk to {LOTHAL_NPCS.find((n) => n.id === activeNearbyNpc)?.name[language]}</span>
             </button>
           )}
 
           {activeNearbyGame && (
-            <button 
+            <button
               className="btn-primary"
-              style={{ background: 'var(--turmeric-dark)', borderColor: '#B8860B' }}
+              style={{ background: 'var(--turmeric-dark)', borderColor: '#B8860B', display: 'flex', alignItems: 'center', gap: '6px' }}
               onClick={() => onEnterMiniGame(activeNearbyGame)}
             >
               <Trophy size={16} />
@@ -638,7 +789,7 @@ export const LothalIsometricWorld: React.FC<LothalWorldProps> = ({
           )}
 
           {isNearShip && onOpenCargoDecision && (
-            <button 
+            <button
               className="btn-primary"
               style={{ background: 'var(--indigo)', borderColor: '#1A2340', display: 'flex', alignItems: 'center', gap: '6px' }}
               onClick={onOpenCargoDecision}
@@ -651,52 +802,54 @@ export const LothalIsometricWorld: React.FC<LothalWorldProps> = ({
       )}
 
       {/* Virtual Touch D-Pad for Chromebooks / Mobile */}
-      <div 
+      <div
+        className="world-dpad"
         style={{
           position: 'absolute',
-          bottom: '24px',
-          left: '24px',
+          touchAction: 'none',
           display: 'grid',
-          gridTemplateColumns: 'repeat(3, 40px)',
-          gridTemplateRows: 'repeat(3, 40px)',
           gap: '4px',
           zIndex: 15,
           opacity: 0.85
         }}
       >
         <div />
-        <button 
-          className="btn-secondary" 
+        <button
+          className="btn-secondary"
           style={{ padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          onClick={() => handleDirectionMove(0, -1)}
+          aria-label="Walk up"
+          {...dpadHandlers('arrowup')}
         >
           <ArrowUp size={16} />
         </button>
         <div />
 
-        <button 
-          className="btn-secondary" 
+        <button
+          className="btn-secondary"
           style={{ padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          onClick={() => handleDirectionMove(-1, 0)}
+          aria-label="Walk left"
+          {...dpadHandlers('arrowleft')}
         >
           <ArrowLeft size={16} />
         </button>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: '#888' }}>
           <Footprints size={14} />
         </div>
-        <button 
-          className="btn-secondary" 
+        <button
+          className="btn-secondary"
           style={{ padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          onClick={() => handleDirectionMove(1, 0)}
+          aria-label="Walk right"
+          {...dpadHandlers('arrowright')}
         >
           <ArrowRight size={16} />
         </button>
 
         <div />
-        <button 
-          className="btn-secondary" 
+        <button
+          className="btn-secondary"
           style={{ padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          onClick={() => handleDirectionMove(0, 1)}
+          aria-label="Walk down"
+          {...dpadHandlers('arrowdown')}
         >
           <ArrowDown size={16} />
         </button>

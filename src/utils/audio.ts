@@ -1,8 +1,17 @@
 // Web Audio API lightweight sound synthesizer
 // Zero external audio files required, fast and responsive on Chromebooks
+import { useGameStore } from '../store/useGameStore';
 
 class SoundSynthesizer {
   private ctx: AudioContext | null = null;
+
+  // Returns the audio context when sound is enabled, so every sound respects the
+  // player's Sound toggle without each caller checking it.
+  private ready(): AudioContext | null {
+    if (!useGameStore.getState().soundEnabled) return null;
+    this.initCtx();
+    return this.ctx;
+  }
 
   private initCtx() {
     if (!this.ctx && typeof window !== 'undefined') {
@@ -12,14 +21,14 @@ class SoundSynthesizer {
       }
     }
     if (this.ctx && this.ctx.state === 'suspended') {
-      this.ctx.resume();
+      // Browsers reject resume() until a user gesture; the next sound will retry.
+      this.ctx.resume().catch(() => {});
     }
   }
 
   // Lattu (Spinning Top) Whirring hum
   playTopSpin() {
-    this.initCtx();
-    if (!this.ctx) return;
+    if (!this.ready() || !this.ctx) return;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
 
@@ -41,8 +50,7 @@ class SoundSynthesizer {
 
   // Correct answer / Gyaan gain chime (Harmonic tanpura-like chime)
   playCorrect() {
-    this.initCtx();
-    if (!this.ctx) return;
+    if (!this.ready() || !this.ctx) return;
     const notes = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6
     notes.forEach((freq, idx) => {
       if (!this.ctx) return;
@@ -65,8 +73,7 @@ class SoundSynthesizer {
 
   // Wrong answer / Urja drop dull gong
   playWrong() {
-    this.initCtx();
-    if (!this.ctx) return;
+    if (!this.ready() || !this.ctx) return;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
 
@@ -86,8 +93,7 @@ class SoundSynthesizer {
 
   // Mini-game rhythm tap (wooden clack)
   playDrillTap() {
-    this.initCtx();
-    if (!this.ctx) return;
+    if (!this.ready() || !this.ctx) return;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
 
@@ -107,8 +113,7 @@ class SoundSynthesizer {
 
   // Food eat crunch / vitality restore
   playEat() {
-    this.initCtx();
-    if (!this.ctx) return;
+    if (!this.ready() || !this.ctx) return;
     const freqs = [330, 440, 550];
     freqs.forEach((freq, idx) => {
       if (!this.ctx) return;
@@ -127,8 +132,7 @@ class SoundSynthesizer {
 
   // Button click
   playClick() {
-    this.initCtx();
-    if (!this.ctx) return;
+    if (!this.ready() || !this.ctx) return;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     osc.type = 'triangle';

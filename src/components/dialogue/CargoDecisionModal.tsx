@@ -3,6 +3,7 @@ import { useGameStore } from '../../store/useGameStore';
 import kingdomsData from '../../content/kingdoms.json';
 import { sound } from '../../utils/audio';
 import { Ship, CheckCircle2, Award } from 'lucide-react';
+import { usePauseWhile } from '../../hooks/usePauseWhile';
 
 interface CargoDecisionModalProps {
   onClose: () => void;
@@ -13,6 +14,7 @@ export const CargoDecisionModal: React.FC<CargoDecisionModalProps> = ({ onClose 
   const soundEnabled = useGameStore((state) => state.soundEnabled);
   const setCargoDecision = useGameStore((state) => state.setCargoDecision);
   const cargoDecisions = useGameStore((state) => state.cargoDecisions);
+  usePauseWhile(true);
 
   const lothal = kingdomsData.find((k) => k.id === 'lothal');
   const prompt = lothal?.cargoDecisionPrompt;

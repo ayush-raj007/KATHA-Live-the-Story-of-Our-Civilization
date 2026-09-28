@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { sound } from '../../utils/audio';
+import { SEAL_MATCH, sealMatchStars } from './scoring';
 
 interface SealMatchProps {
   onFinish: (stars: number, score: number) => void;
@@ -23,138 +24,133 @@ const SEAL_MOTIFS = [
   { motif: '🐟', name: 'Coastal Fish Motif' },
 ];
 
+const MISMATCH_FLIP_BACK_MS = 750;
+const RESULT_DELAY_MS = 600;
+const TIME_LIMIT_S = SEAL_MATCH.timeLimitMs / 1000;
+
+const createShuffledDeck = (): SealCard[] => {
+  const deck: SealCard[] = [];
+  SEAL_MOTIFS.forEach((item, index) => {
+    deck.push({ id: index * 2, motif: item.motif, name: item.name, isFlipped: false, isMatched: false });
+    deck.push({ id: index * 2 + 1, motif: item.motif, name: item.name, isFlipped: false, isMatched: false });
+  });
+
+  // Fisher-Yates shuffle
+  for (let i = deck.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
+  return deck;
+};
+
 export const SealMatch: React.FC<SealMatchProps> = ({ onFinish, onFail }) => {
-  const [cards, setCards] = useState<SealCard[]>([]);
+  const [cards, setCards] = useState<SealCard[]>(createShuffledDeck);
   const [selectedCards, setSelectedCards] = useState<number[]>([]);
   const [matchedPairs, setMatchedPairs] = useState(0);
   const [errors, setErrors] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(55);
+  const [timeLeft, setTimeLeft] = useState(TIME_LIMIT_S);
   const [isEvaluating, setIsEvaluating] = useState(false);
 
-  const matchedPairsRef = useRef(matchedPairs);
-  matchedPairsRef.current = matchedPairs;
-  const timeLeftRef = useRef(timeLeft);
-  timeLeftRef.current = timeLeft;
-  const errorsRef = useRef(errors);
-  errorsRef.current = errors;
+  const game = useRef({ matched: 0, errors: 0, startedAt: 0, isFinished: false });
+  const callbacksRef = useRef({ onFinish, onFail });
+  useEffect(() => {
+    callbacksRef.current = { onFinish, onFail };
+  }, [onFinish, onFail]);
 
   const timerRef = useRef<number | null>(null);
-  const isFinishedRef = useRef(false);
+  const pendingTimeouts = useRef(new Set<number>());
 
-  // Initialize and shuffle cards
-  useEffect(() => {
-    const deck: SealCard[] = [];
-    SEAL_MOTIFS.forEach((item, index) => {
-      deck.push({ id: index * 2, motif: item.motif, name: item.name, isFlipped: false, isMatched: false });
-      deck.push({ id: index * 2 + 1, motif: item.motif, name: item.name, isFlipped: false, isMatched: false });
-    });
-
-    // Shuffle deck
-    for (let i = deck.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [deck[i], deck[j]] = [deck[j], deck[i]];
-    }
-
-    setCards(deck);
-  }, []);
-
-  const evaluateEndGame = (finalMatched: number) => {
-    if (isFinishedRef.current) return;
-    isFinishedRef.current = true;
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-
-    setTimeout(() => {
-      let stars = 0;
-      const remTime = timeLeftRef.current;
-      const errCount = errorsRef.current;
-      if (finalMatched >= 6 && remTime >= 15 && errCount <= 4) stars = 3;
-      else if (finalMatched >= 5 || (finalMatched >= 4 && errCount <= 5)) stars = 2;
-      else if (finalMatched >= 4) stars = 1;
-
-      if (stars >= 1) {
-        onFinish(stars, finalMatched * 50);
-      } else {
-        onFail();
-      }
-    }, 600);
+  const later = (fn: () => void, ms: number) => {
+    const id = window.setTimeout(() => {
+      pendingTimeouts.current.delete(id);
+      fn();
+    }, ms);
+    pendingTimeouts.current.add(id);
   };
 
-  // Timer - runs once on mount without restarting on matches
+  const stopTimer = () => {
+    if (timerRef.current !== null) clearInterval(timerRef.current);
+    timerRef.current = null;
+  };
+
+  const endGame = () => {
+    const g = game.current;
+    if (g.isFinished) return;
+    g.isFinished = true;
+    stopTimer();
+
+    const elapsedMs = Date.now() - g.startedAt;
+    later(() => {
+      const stars = sealMatchStars(g.matched, g.errors, elapsedMs);
+      if (stars >= 1) {
+        callbacksRef.current.onFinish(stars, g.matched * 50);
+      } else {
+        callbacksRef.current.onFail();
+      }
+    }, RESULT_DELAY_MS);
+  };
+
+  // Countdown (the "archive candle"); timeouts are cleared if the contest is closed.
   useEffect(() => {
+    const g = game.current;
+    const timeouts = pendingTimeouts.current;
+    g.startedAt = Date.now();
     timerRef.current = window.setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          if (timerRef.current) clearInterval(timerRef.current);
-          evaluateEndGame(matchedPairsRef.current);
-          return 0;
-        }
-        return prev - 1;
-      });
+      const remaining = Math.max(0, TIME_LIMIT_S - Math.floor((Date.now() - g.startedAt) / 1000));
+      setTimeLeft(remaining);
+      if (remaining === 0) endGame();
     }, 1000);
 
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
+      stopTimer();
+      timeouts.forEach((id) => clearTimeout(id));
+      timeouts.clear();
     };
+    // endGame only touches refs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleCardClick = (index: number) => {
-    if (isFinishedRef.current || isEvaluating || !cards[index] || cards[index].isFlipped || cards[index].isMatched) return;
+    const card = cards[index];
+    if (game.current.isFinished || isEvaluating || !card || card.isFlipped || card.isMatched) return;
 
     sound.playClick();
-    const newCards = [...cards];
-    newCards[index] = { ...newCards[index], isFlipped: true };
-    setCards(newCards);
+    const flipped = cards.map((c, i) => (i === index ? { ...c, isFlipped: true } : c));
+    setCards(flipped);
 
     const newSelected = [...selectedCards, index];
-    setSelectedCards(newSelected);
+    if (newSelected.length < 2) {
+      setSelectedCards(newSelected);
+      return;
+    }
 
-    if (newSelected.length === 2) {
+    const [idx1, idx2] = newSelected;
+    setSelectedCards([]);
+
+    if (flipped[idx1].name === flipped[idx2].name) {
+      sound.playCorrect();
+      setCards(flipped.map((c, i) => (i === idx1 || i === idx2 ? { ...c, isMatched: true } : c)));
+      game.current.matched += 1;
+      setMatchedPairs(game.current.matched);
+      if (game.current.matched >= SEAL_MATCH.pairs) endGame();
+    } else {
+      sound.playWrong();
+      game.current.errors += 1;
+      setErrors(game.current.errors);
       setIsEvaluating(true);
-      const [idx1, idx2] = newSelected;
-      const card1 = newCards[idx1];
-      const card2 = newCards[idx2];
-
-      if (card1.name === card2.name) {
-        // Matched!
-        sound.playCorrect();
-        newCards[idx1] = { ...newCards[idx1], isMatched: true };
-        newCards[idx2] = { ...newCards[idx2], isMatched: true };
-        const newMatched = matchedPairsRef.current + 1;
-        setMatchedPairs(newMatched);
-        setSelectedCards([]);
+      later(() => {
+        setCards((prev) => prev.map((c, i) => (i === idx1 || i === idx2 ? { ...c, isFlipped: false } : c)));
         setIsEvaluating(false);
-
-        if (newMatched >= 6) {
-          if (timerRef.current) {
-            clearInterval(timerRef.current);
-            timerRef.current = null;
-          }
-          evaluateEndGame(6);
-        }
-      } else {
-        // Mismatch
-        sound.playWrong();
-        setErrors((e) => e + 1);
-        setTimeout(() => {
-          newCards[idx1] = { ...newCards[idx1], isFlipped: false };
-          newCards[idx2] = { ...newCards[idx2], isFlipped: false };
-          setCards(newCards);
-          setSelectedCards([]);
-          setIsEvaluating(false);
-        }, 750);
-      }
+      }, MISMATCH_FLIP_BACK_MS);
     }
   };
 
   return (
     <div style={{ textAlign: 'center', userSelect: 'none' }}>
       {/* Header Info */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 12px', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
         <div style={{ fontSize: '14px', fontWeight: 700 }}>
-          Matched Pairs: <strong style={{ color: 'var(--terracotta-dark)', fontSize: '18px' }}>{matchedPairs} / 6</strong>
+          Matched Pairs: <strong style={{ color: 'var(--terracotta-dark)', fontSize: '18px' }}>{matchedPairs} / {SEAL_MATCH.pairs}</strong>
         </div>
         <div style={{ fontSize: '14px', fontWeight: 700, color: timeLeft < 12 ? 'var(--lac-red)' : 'var(--text-primary)' }}>
           ⏱️ Time: {timeLeft}s
@@ -169,7 +165,7 @@ export const SealMatch: React.FC<SealMatchProps> = ({ onFinish, onFail }) => {
       </div>
 
       {/* 4x3 Grid of Steatite Seals */}
-      <div 
+      <div
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(4, 1fr)',

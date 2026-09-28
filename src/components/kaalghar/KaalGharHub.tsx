@@ -31,7 +31,8 @@ export const KaalGharHub: React.FC<KaalGharHubProps> = ({
   const hasLothalShard = kaalShards.includes('lothal_shard');
 
   return (
-    <div 
+    <div
+      className="screen-below-hud"
       style={{
         position: 'relative',
         width: '100%',
@@ -43,7 +44,7 @@ export const KaalGharHub: React.FC<KaalGharHubProps> = ({
       }}
     >
       {/* Header */}
-      <div 
+      <div
         style={{
           padding: '16px 24px',
           background: 'rgba(255, 253, 249, 0.95)',
@@ -66,8 +67,8 @@ export const KaalGharHub: React.FC<KaalGharHubProps> = ({
         </div>
 
         {/* Tab navigation */}
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button 
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <button
             className={`btn-secondary ${activeTab === 'shelf' ? 'btn-primary' : ''}`}
             onClick={() => {
               if (soundEnabled) sound.playClick();
@@ -77,7 +78,7 @@ export const KaalGharHub: React.FC<KaalGharHubProps> = ({
             🏺 {language === 'en' ? 'Toy Shelf' : 'खिलौना मंच'}
           </button>
 
-          <button 
+          <button
             className={`btn-secondary ${activeTab === 'journal' ? 'btn-primary' : ''}`}
             onClick={() => {
               if (soundEnabled) sound.playClick();
@@ -87,7 +88,7 @@ export const KaalGharHub: React.FC<KaalGharHubProps> = ({
             📜 {language === 'en' ? 'Knowledge Journal' : 'ज्ञान पत्रिका'} ({journalEntries.length})
           </button>
 
-          <button 
+          <button
             className={`btn-secondary ${activeTab === 'blueprints' ? 'btn-primary' : ''}`}
             onClick={() => {
               if (soundEnabled) sound.playClick();
@@ -97,7 +98,7 @@ export const KaalGharHub: React.FC<KaalGharHubProps> = ({
             ✂️ {language === 'en' ? 'DIY Blueprints' : 'शिल्प खाका'}
           </button>
 
-          <button 
+          <button
             className="btn-primary"
             style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
             onClick={() => {
@@ -112,12 +113,12 @@ export const KaalGharHub: React.FC<KaalGharHubProps> = ({
       </div>
 
       {/* Main Content Area */}
-      <div style={{ flex: 1, padding: '24px', overflowY: 'auto' }}>
+      <div className="clear-of-companion" style={{ flex: 1, padding: '24px', overflowY: 'auto' }}>
         {/* TAB 1: TOY COLLECTION SHELF */}
         {activeTab === 'shelf' && (
           <div style={{ maxWidth: '960px', margin: '0 auto' }}>
             {/* Lattu Status Banner */}
-            <div 
+            <div
               style={{
                 background: '#FFF',
                 border: '2px solid var(--earth-border)',
@@ -125,6 +126,8 @@ export const KaalGharHub: React.FC<KaalGharHubProps> = ({
                 padding: '20px',
                 marginBottom: '24px',
                 display: 'flex',
+                flexWrap: 'wrap',
+                gap: '12px',
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 boxShadow: 'var(--shadow-sm)'
@@ -137,14 +140,14 @@ export const KaalGharHub: React.FC<KaalGharHubProps> = ({
                     Channapatna Lacquered Spinning Top (Temporal Core)
                   </h3>
                   <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                    {hasLothalShard 
+                    {hasLothalShard
                       ? '✓ Lothal Kaal Shard restored! Temporal resonance is 20% stabilized.'
                       : '⚠️ Top is cracked and leaking temporal energy. Win 3 champions in Lothal to earn the first shard!'}
                   </p>
                 </div>
               </div>
 
-              <div 
+              <div
                 style={{
                   background: hasLothalShard ? '#E8F5E9' : '#FFF3E0',
                   border: `1.5px solid ${hasLothalShard ? '#4CAF50' : '#FF9800'}`,
@@ -167,7 +170,7 @@ export const KaalGharHub: React.FC<KaalGharHubProps> = ({
               Collected Traditional Toys Across Indian History
             </h2>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '18px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '18px' }}>
               {toysData.map((toy) => {
                 const isUnlocked = unlockedToys.includes(toy.id);
 
@@ -191,7 +194,7 @@ export const KaalGharHub: React.FC<KaalGharHubProps> = ({
                         <span style={{ fontSize: '32px' }}>
                           {toy.id === 'toy_terracotta_bull' ? '🐂' : '🪵'}
                         </span>
-                        <span 
+                        <span
                           style={{
                             fontSize: '11px',
                             fontWeight: 800,
@@ -218,7 +221,7 @@ export const KaalGharHub: React.FC<KaalGharHubProps> = ({
                     </div>
 
                     <div style={{ marginTop: '16px', display: 'flex', gap: '8px' }}>
-                      <button 
+                      <button
                         className="btn-primary"
                         disabled={!isUnlocked}
                         onClick={() => onOpenToy3D(toy.id)}
@@ -226,7 +229,7 @@ export const KaalGharHub: React.FC<KaalGharHubProps> = ({
                       >
                         🔍 Inspect in 3D
                       </button>
-                      <button 
+                      <button
                         className="btn-secondary"
                         disabled={!isUnlocked}
                         onClick={() => onOpenDiyTemplate(toy.id)}
@@ -263,7 +266,7 @@ export const KaalGharHub: React.FC<KaalGharHubProps> = ({
             {/* Entries List */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               {filteredJournal.map((entry) => (
-                <div 
+                <div
                   key={entry.id}
                   style={{
                     background: '#FFF',
@@ -284,7 +287,7 @@ export const KaalGharHub: React.FC<KaalGharHubProps> = ({
                       </h3>
                     </div>
 
-                    <span 
+                    <span
                       style={{
                         fontSize: '10px',
                         fontWeight: 700,
@@ -319,9 +322,9 @@ export const KaalGharHub: React.FC<KaalGharHubProps> = ({
             <h2 style={{ fontSize: '18px', color: 'var(--text-primary)', marginBottom: '16px' }}>
               Unlocked Phygital Living Toy Templates
             </h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(360px, 100%), 1fr))', gap: '16px' }}>
               {toysData.map((toy) => (
-                <div 
+                <div
                   key={toy.id}
                   style={{
                     background: '#FFF',
@@ -340,8 +343,8 @@ export const KaalGharHub: React.FC<KaalGharHubProps> = ({
                   <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
                     Materials: {toy.diyTemplate.materials.slice(0, 3).join(', ')}...
                   </p>
-                  <button 
-                    className="btn-primary" 
+                  <button
+                    className="btn-primary"
                     onClick={() => onOpenDiyTemplate(toy.id)}
                     style={{ marginTop: '14px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
                   >

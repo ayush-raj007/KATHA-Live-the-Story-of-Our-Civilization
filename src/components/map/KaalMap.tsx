@@ -40,7 +40,8 @@ export const KaalMap: React.FC = () => {
   };
 
   return (
-    <div 
+    <div
+      className="screen-below-hud"
       style={{
         position: 'relative',
         width: '100%',
@@ -61,7 +62,7 @@ export const KaalMap: React.FC = () => {
       )}
 
       {/* Top Header & Timeline Scrub Bar */}
-      <div 
+      <div
         style={{
           padding: '16px 24px',
           background: 'rgba(255, 253, 249, 0.95)',
@@ -110,7 +111,7 @@ export const KaalMap: React.FC = () => {
                   });
                   setSelectedKingdomId(nearest.id);
                 }}
-                style={{ width: '220px', accentColor: 'var(--terracotta)', cursor: 'pointer' }}
+                style={{ width: 'min(220px, 60vw)', accentColor: 'var(--terracotta)', cursor: 'pointer' }}
               />
             </div>
           </div>
@@ -118,9 +119,9 @@ export const KaalMap: React.FC = () => {
       </div>
 
       {/* Main Interactive Map & Details Area */}
-      <div style={{ flex: 1, display: 'flex', position: 'relative', overflow: 'hidden' }}>
+      <div className="kaal-map-body" style={{ flex: 1, display: 'flex', position: 'relative', overflow: 'hidden' }}>
         {/* Stylized Map Viewport */}
-        <div 
+        <div
           style={{
             flex: 1,
             position: 'relative',
@@ -131,11 +132,11 @@ export const KaalMap: React.FC = () => {
           }}
         >
           {/* Stylized SVG Map of India Outline with Coastal Waterways */}
-          <svg 
-            viewBox="0 0 800 900" 
-            style={{ 
-              width: '100%', 
-              height: '100%', 
+          <svg
+            viewBox="0 0 800 900"
+            style={{
+              width: '100%',
+              height: '100%',
               maxHeight: 'calc(100vh - 180px)',
               filter: 'drop-shadow(0 6px 12px rgba(44,24,16,0.15))'
             }}
@@ -151,19 +152,19 @@ export const KaalMap: React.FC = () => {
             {/* Stylized Peninsular & Northern Subcontinent Landmass */}
             <path
               d="
-                M 340,60 
-                C 380,50 480,80 500,120 
-                C 520,150 560,180 580,240 
-                C 620,290 680,310 720,380 
-                C 740,430 710,480 670,510 
-                C 620,530 580,590 560,650 
-                C 530,730 460,820 420,870 
-                C 410,880 400,880 390,870 
-                C 340,810 290,720 270,640 
-                C 250,560 210,510 180,470 
-                C 140,440 100,410 110,360 
-                C 130,320 200,310 240,290 
-                C 270,250 260,170 290,110 
+                M 340,60
+                C 380,50 480,80 500,120
+                C 520,150 560,180 580,240
+                C 620,290 680,310 720,380
+                C 740,430 710,480 670,510
+                C 620,530 580,590 560,650
+                C 530,730 460,820 420,870
+                C 410,880 400,880 390,870
+                C 340,810 290,720 270,640
+                C 250,560 210,510 180,470
+                C 140,440 100,410 110,360
+                C 130,320 200,310 240,290
+                C 270,250 260,170 290,110
                 Z
               "
               fill="#F9F5EC"
@@ -201,20 +202,20 @@ export const KaalMap: React.FC = () => {
               const cy = (k.locationMapCoords.y / 100) * 900;
 
               return (
-                <g 
-                  key={k.id} 
+                <g
+                  key={k.id}
                   onClick={() => handleSelectNode(k.id)}
                   style={{ cursor: 'pointer' }}
                 >
                   {/* Glowing halo for unlocked & selected nodes */}
                   {isSelected && (
-                    <circle 
-                      cx={cx} 
-                      cy={cy} 
-                      r="32" 
-                      fill="none" 
-                      stroke="var(--turmeric)" 
-                      strokeWidth="3" 
+                    <circle
+                      cx={cx}
+                      cy={cy}
+                      r="32"
+                      fill="none"
+                      stroke="var(--turmeric)"
+                      strokeWidth="3"
                       strokeDasharray="5,5"
                       opacity="0.9"
                     >
@@ -281,9 +282,9 @@ export const KaalMap: React.FC = () => {
         </div>
 
         {/* Selected Kingdom Side Details Sheet */}
-        <aside 
+        <aside
+          className="kaal-map-aside"
           style={{
-            width: '380px',
             background: 'var(--sand-card)',
             borderLeft: '3px solid var(--earth-border)',
             padding: '24px',
@@ -296,7 +297,7 @@ export const KaalMap: React.FC = () => {
         >
           <div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <span 
+              <span
                 style={{
                   fontSize: '11px',
                   fontWeight: 800,
@@ -332,7 +333,7 @@ export const KaalMap: React.FC = () => {
             </p>
 
             {/* "Aaj Ka Bhojan" Preview */}
-            <div 
+            <div
               style={{
                 marginTop: '16px',
                 background: 'var(--terracotta-soft)',
@@ -358,7 +359,7 @@ export const KaalMap: React.FC = () => {
           {/* Action Button */}
           <div style={{ marginTop: '24px' }}>
             {isSelectedUnlocked ? (
-              <button 
+              <button
                 className="btn-primary"
                 onClick={handleEnterKingdom}
                 style={{
@@ -376,7 +377,7 @@ export const KaalMap: React.FC = () => {
                 <span>{language === 'en' ? 'Spin Top & Enter Lothal' : 'लट्टू घुमाएं और लोथल जाएं'}</span>
               </button>
             ) : (
-              <div 
+              <div
                 style={{
                   background: '#ECEFF1',
                   color: '#546E7A',

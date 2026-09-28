@@ -234,7 +234,7 @@ export const MiniGameModal: React.FC<MiniGameModalProps> = ({ gameId, onClose })
               <button className="btn-secondary" onClick={onClose}>
                 Exit to Kingdom
               </button>
-              {urja >= 20 && (
+              {urja >= gameConfig.minUrjaToEnter && (
                 <button 
                   className="btn-primary" 
                   onClick={handleRetry}

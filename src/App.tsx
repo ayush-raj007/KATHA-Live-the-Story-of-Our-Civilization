@@ -8,9 +8,14 @@ import { KaalGharHub } from './components/kaalghar/KaalGharHub';
 import { NpcDialogueModal } from './components/dialogue/NpcDialogueModal';
 import { CargoDecisionModal } from './components/dialogue/CargoDecisionModal';
 import { MiniGameModal } from './components/minigames/MiniGameModal';
-import { Toy3DModal } from './components/toy3d/Toy3DViewer';
+import { LazyBoundary } from './components/common/LazyBoundary';
 import { DiyTemplatePrintModal } from './components/toy3d/DiyTemplatePrintModal';
 import { FoodFactCard } from './components/food/FoodFactCard';
+
+// three.js is large and only needed for the 3D viewer, so load it on demand
+const Toy3DModal = React.lazy(() =>
+  import('./components/toy3d/Toy3DViewer').then((m) => ({ default: m.Toy3DModal }))
+);
 
 export const App: React.FC = () => {
   // Activate Urja passive exploration drain (-1 every 20s)
@@ -22,7 +27,6 @@ export const App: React.FC = () => {
   const activeToyId = useGameStore((state) => state.activeToyId);
   const openToyModal = useGameStore((state) => state.openToyModal);
   const closeToyModal = useGameStore((state) => state.closeToyModal);
-  const isKaalThakaanTriggered = useGameStore((state) => state.isKaalThakaanTriggered);
 
   // Local Modal States
   const [activeNpcId, setActiveNpcId] = useState<string | null>(null);
@@ -31,14 +35,18 @@ export const App: React.FC = () => {
   const [diyPrintToyId, setDiyPrintToyId] = useState<string | null>(null);
 
   // Auto-dismiss child modals if Kaal Thakaan triggers
-  React.useEffect(() => {
-    if (isKaalThakaanTriggered) {
-      setActiveNpcId(null);
-      setActiveGameId(null);
-      setIsCargoModalOpen(false);
-      setDiyPrintToyId(null);
-    }
-  }, [isKaalThakaanTriggered]);
+  React.useEffect(
+    () =>
+      useGameStore.subscribe((state, prev) => {
+        if (state.isKaalThakaanTriggered && !prev.isKaalThakaanTriggered) {
+          setActiveNpcId(null);
+          setActiveGameId(null);
+          setIsCargoModalOpen(false);
+          setDiyPrintToyId(null);
+        }
+      }),
+    []
+  );
 
   const handleInteractNpc = (npcId: string) => {
     setActiveNpcId(npcId);
@@ -59,7 +67,7 @@ export const App: React.FC = () => {
       {/* Primary Screen Viewport Router */}
       <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
         {activeScreen === 'kaal_map' && <KaalMap />}
-        
+
         {activeScreen === 'kingdom' && (
           <LothalIsometricWorld
             onInteractNpc={handleInteractNpc}
@@ -112,15 +120,17 @@ export const App: React.FC = () => {
 
       {/* 3D Toy Viewer Modal (Three.js) */}
       {activeToyId && (
-        <Toy3DModal
-          toyId={activeToyId}
-          onClose={closeToyModal}
-          onOpenDiyPrint={() => {
-            const currentId = activeToyId;
-            closeToyModal();
-            setDiyPrintToyId(currentId);
-          }}
-        />
+        <LazyBoundary onClose={closeToyModal}>
+          <Toy3DModal
+            toyId={activeToyId}
+            onClose={closeToyModal}
+            onOpenDiyPrint={() => {
+              const currentId = activeToyId;
+              closeToyModal();
+              setDiyPrintToyId(currentId);
+            }}
+          />
+        </LazyBoundary>
       )}
 
       {/* Printable DIY Craft Blueprint Modal */}

@@ -12,6 +12,11 @@ import type {
 } from '../types/game';
 import foodsData from '../content/foods.json';
 import kingdomsData from '../content/kingdoms.json';
+import minigamesData from '../content/minigames.json';
+
+export const MAX_URJA = 100;
+export const LOW_URJA_THRESHOLD = 25; // below this, walk speed drops
+const DEFAULT_MIN_URJA_TO_ENTER = 20;
 
 interface GameState {
   // Screen & Navigation
@@ -25,7 +30,8 @@ interface GameState {
   gyaan: number; // Knowledge score
   isLowUrja: boolean; // urja < 25
   isKaalThakaanTriggered: boolean;
-  isPaused: boolean; // paused during dialogues, menus, minigames
+  isPaused: boolean; // paused during minigames and Kaal Thakaan
+  overlayCount: number; // number of open modals/overlays; gameplay is paused while > 0
   
   // Player Position in current kingdom
   playerPosition: PlayerPosition;
@@ -67,6 +73,8 @@ interface GameState {
   setLanguage: (lang: Language) => void;
   toggleSound: () => void;
   setPaused: (paused: boolean) => void;
+  pushOverlay: () => void;
+  popOverlay: () => void;
   setPlayerPosition: (pos: Partial<PlayerPosition>) => void;
   
   // Urja Operations
@@ -93,6 +101,7 @@ interface GameState {
   executeBarter: (giveItemId: string, giveAmount: number, receiveItemId: string, receiveAmount: number) => boolean;
   
   // Quests & Story
+  talkToNpc: (npcId: string) => void;
   advanceQuestStep: () => void;
   setCargoDecision: (kingdomId: string, optionId: string) => void;
   
@@ -194,79 +203,128 @@ const INITIAL_QUEST: QuestProgress = {
   isComplete: false
 };
 
+// Indices into INITIAL_QUEST.steps
+const QUEST_STEP = {
+  MEET_SOMENDRA: 0,
+  BEAD_DRILLER: 1,
+  BARTER: 2,
+  TIDE_DOCK: 3,
+  SEAL_MATCH: 4,
+  CARGO_DECISION: 5,
+  KAAL_SHARD: 6
+} as const;
+
+const LOTHAL_SHARD_ID = 'lothal_shard';
+
+type ProgressState = Pick<GameState, 'miniGameRecords' | 'cargoDecisions' | 'kaalShards'>;
+
+// Whether a step's goal is already met by saved progress. Meeting Somendra and
+// bartering are one-off events, so they only complete when they happen.
+const isQuestStepDone = (state: ProgressState, stepIndex: number): boolean => {
+  switch (stepIndex) {
+    case QUEST_STEP.BEAD_DRILLER: return Boolean(state.miniGameRecords['bead_driller']?.passed);
+    case QUEST_STEP.TIDE_DOCK: return Boolean(state.miniGameRecords['tide_dock']?.passed);
+    case QUEST_STEP.SEAL_MATCH: return Boolean(state.miniGameRecords['seal_match']?.passed);
+    case QUEST_STEP.CARGO_DECISION: return Boolean(state.cargoDecisions['lothal']);
+    case QUEST_STEP.KAAL_SHARD: return state.kaalShards.includes(LOTHAL_SHARD_ID);
+    default: return false;
+  }
+};
+
+/**
+ * Returns the quest after an event: completes `eventStep` if it is the current step,
+ * then skips over any following steps whose goals were already achieved out of order.
+ */
+const progressQuest = (
+  quest: QuestProgress | null,
+  state: ProgressState,
+  eventStep?: number
+): QuestProgress | null => {
+  if (!quest || quest.isComplete) return quest;
+
+  let index = quest.currentStepIndex;
+  if (eventStep === index) index++;
+  while (index < quest.steps.length && isQuestStepDone(state, index)) index++;
+  if (index === quest.currentStepIndex) return quest;
+
+  return {
+    ...quest,
+    currentStepIndex: index,
+    steps: quest.steps.map((step, idx) => ({ ...step, completed: idx < index })),
+    isComplete: index >= quest.steps.length
+  };
+};
+
+const INITIAL_MINIGAME_RECORDS: Record<string, MiniGameRecord> = {
+  bead_driller: { gameId: 'bead_driller', stars: 0, bestScore: 0, passed: false },
+  tide_dock: { gameId: 'tide_dock', stars: 0, bestScore: 0, passed: false },
+  seal_match: { gameId: 'seal_match', stars: 0, bestScore: 0, passed: false }
+};
+
+const WELCOME_JOURNAL_ENTRY: JournalEntry = {
+  id: 'welcome_entry',
+  timestamp: Date.now(),
+  kingdomId: 'lothal',
+  title: 'The Cracked Lattu & The Port of Lothal',
+  body: 'Our Channapatna spinning top has lost power. We have landed in the ancient Gulf of Khambhat around 2000 BCE. Here, Harappan engineers built the world’s first tidal dockyard. We must stay energized through ancient foods, win the 3 champions, and earn the Lothal Kaal Shard to repair our top.',
+  category: 'history',
+  status: 'VERIFIED'
+};
+
+// Everything that makes up a fresh game (excluding the language and sound settings).
+const createInitialProgress = () => ({
+  activeScreen: 'kaal_map' as ActiveScreen,
+  currentKingdomId: 'lothal',
+  urja: MAX_URJA,
+  gyaan: 0,
+  isLowUrja: false,
+  isKaalThakaanTriggered: false,
+  isPaused: false,
+  overlayCount: 0,
+  playerPosition: { x: 320, y: 280, direction: 'S', isMoving: false } as PlayerPosition,
+  inventory: INITIAL_INVENTORY,
+  activeQuest: INITIAL_QUEST as QuestProgress | null,
+  cargoDecisions: {} as Record<string, CargoDecisionRecord>,
+  answeredQuestions: {} as GameState['answeredQuestions'],
+  activeCheckpointQuestionId: null as string | null,
+  activeNpcId: null as string | null,
+  activeMiniGameId: null as string | null,
+  miniGameRecords: INITIAL_MINIGAME_RECORDS,
+  unlockedToys: ['toy_terracotta_bull'],
+  activeToyId: null as string | null,
+  kaalShards: [] as string[],
+  unlockedKingdoms: ['lothal'],
+  journalEntries: [WELCOME_JOURNAL_ENTRY],
+  activeFoodFactId: null as string | null,
+  companionMessage: 'Namaste Yatri! I am your Lothal Terracotta Bull companion. Follow me to explore the ancient port city!' as string | null,
+  companionMood: 'happy' as GameState['companionMood']
+});
+
 export const useGameStore = create<GameState>()(
   persist(
     (set, get) => ({
-      activeScreen: 'kaal_map',
-      currentKingdomId: 'lothal',
+      ...createInitialProgress(),
       language: 'en',
       soundEnabled: true,
-
-      urja: 100,
-      gyaan: 0,
-      isLowUrja: false,
-      isKaalThakaanTriggered: false,
-      isPaused: false,
-
-      playerPosition: {
-        x: 320,
-        y: 280,
-        direction: 'S',
-        isMoving: false
-      },
-
-      inventory: INITIAL_INVENTORY,
-      activeQuest: INITIAL_QUEST,
-      cargoDecisions: {},
-
-      answeredQuestions: {},
-      activeCheckpointQuestionId: null,
-      activeNpcId: null,
-
-      activeMiniGameId: null,
-      miniGameRecords: {
-        bead_driller: { gameId: 'bead_driller', stars: 0, bestScore: 0, passed: false },
-        tide_dock: { gameId: 'tide_dock', stars: 0, bestScore: 0, passed: false },
-        seal_match: { gameId: 'seal_match', stars: 0, bestScore: 0, passed: false }
-      },
-
-      unlockedToys: ['toy_terracotta_bull'],
-      activeToyId: null,
-      kaalShards: [],
-      unlockedKingdoms: ['lothal'],
-
-      journalEntries: [
-        {
-          id: 'welcome_entry',
-          timestamp: Date.now(),
-          kingdomId: 'lothal',
-          title: 'The Cracked Lattu & The Port of Lothal',
-          body: 'Our Channapatna spinning top has lost power. We have landed in the ancient Gulf of Khambhat around 2000 BCE. Here, Harappan engineers built the world’s first tidal dockyard. We must stay energized through ancient foods, win the 3 champions, and earn the Lothal Kaal Shard to repair our top.',
-          category: 'history',
-          status: 'VERIFIED'
-        }
-      ],
-
-      activeFoodFactId: null,
-      companionMessage: 'Namaste Yatri! I am your Lothal Terracotta Bull companion. Follow me to explore the ancient port city!',
-      companionMood: 'happy',
 
       setScreen: (screen) => set({ activeScreen: screen }),
       setLanguage: (lang) => set({ language: lang }),
       toggleSound: () => set((state) => ({ soundEnabled: !state.soundEnabled })),
       setPaused: (paused) => set({ isPaused: paused }),
+      pushOverlay: () => set((state) => ({ overlayCount: state.overlayCount + 1 })),
+      popOverlay: () => set((state) => ({ overlayCount: Math.max(0, state.overlayCount - 1) })),
       setPlayerPosition: (pos) =>
         set((state) => ({ playerPosition: { ...state.playerPosition, ...pos } })),
 
       drainUrjaPassive: () => {
         const state = get();
         // Paused during dialogue, menus, minigames, or when Kaal Thakaan is already triggered
-        if (state.isPaused || state.activeScreen !== 'kingdom' || state.isKaalThakaanTriggered) {
+        if (state.isPaused || state.overlayCount > 0 || state.activeScreen !== 'kingdom' || state.isKaalThakaanTriggered) {
           return;
         }
 
         const newUrja = Math.max(0, state.urja - 1);
-        const isLow = newUrja < 25;
+        const isLow = newUrja < LOW_URJA_THRESHOLD;
         
         let companionMsg = state.companionMessage;
         let companionMood = state.companionMood;
@@ -296,7 +354,7 @@ export const useGameStore = create<GameState>()(
 
         const foodDef = foodsData.find((f) => f.id === foodId);
         const urjaBoost = foodDef ? foodDef.urjaRestore : (item.urjaValue || 25);
-        const newUrja = Math.min(100, state.urja + urjaBoost);
+        const newUrja = Math.min(MAX_URJA, state.urja + urjaBoost);
 
         // Deduct 1 food item
         const newInventory = { ...state.inventory };
@@ -328,7 +386,7 @@ export const useGameStore = create<GameState>()(
 
         set({
           urja: newUrja,
-          isLowUrja: newUrja < 25,
+          isLowUrja: newUrja < LOW_URJA_THRESHOLD,
           inventory: newInventory,
           activeFoodFactId: foodId,
           journalEntries: newJournal,
@@ -343,7 +401,7 @@ export const useGameStore = create<GameState>()(
 
       applyUrjaChange: (delta: number, reason?: string) => {
         const state = get();
-        const newUrja = Math.min(100, Math.max(0, state.urja + delta));
+        const newUrja = Math.min(MAX_URJA, Math.max(0, state.urja + delta));
         
         if (newUrja === 0) {
           get().triggerKaalThakaan();
@@ -352,7 +410,7 @@ export const useGameStore = create<GameState>()(
 
         set({
           urja: newUrja,
-          isLowUrja: newUrja < 25,
+          isLowUrja: newUrja < LOW_URJA_THRESHOLD,
           companionMessage: reason ? reason : state.companionMessage
         });
       },
@@ -421,11 +479,11 @@ export const useGameStore = create<GameState>()(
         if (isCorrect) {
           const urjaDelta = 5;
           const gyaanDelta = 15;
-          const newUrja = Math.min(100, state.urja + urjaDelta);
+          const newUrja = Math.min(MAX_URJA, state.urja + urjaDelta);
 
           set({
             urja: newUrja,
-            isLowUrja: newUrja < 25,
+            isLowUrja: newUrja < LOW_URJA_THRESHOLD,
             gyaan: state.gyaan + gyaanDelta,
             answeredQuestions: {
               ...state.answeredQuestions,
@@ -448,16 +506,19 @@ export const useGameStore = create<GameState>()(
           const penalty = newFailedAttempts > 1 ? 15 : 10;
           const newUrja = Math.max(0, state.urja - penalty);
 
+          set({
+            answeredQuestions: {
+              ...state.answeredQuestions,
+              [questionId]: { answeredCorrectly: false, failedAttempts: newFailedAttempts }
+            }
+          });
+
           if (newUrja === 0) {
             get().triggerKaalThakaan();
           } else {
             set({
               urja: newUrja,
-              isLowUrja: newUrja < 25,
-              answeredQuestions: {
-                ...state.answeredQuestions,
-                [questionId]: { answeredCorrectly: false, failedAttempts: newFailedAttempts }
-              },
+              isLowUrja: newUrja < LOW_URJA_THRESHOLD,
               companionMood: 'worried'
             });
           }
@@ -474,8 +535,7 @@ export const useGameStore = create<GameState>()(
 
       startMiniGame: (gameId: string) => {
         const state = get();
-        // Check minimum Urja to enter (e.g. 20)
-        const minUrja = 20;
+        const minUrja = minigamesData.find((g) => g.id === gameId)?.minUrjaToEnter ?? DEFAULT_MIN_URJA_TO_ENTER;
         if (state.urja < minUrja) {
           set({
             companionMessage: state.language === 'en'
@@ -523,12 +583,6 @@ export const useGameStore = create<GameState>()(
           rewardMsg = 'Archives aligned! Earned dried sweet Jujube dates!';
         }
 
-        // Check if all 3 Lothal mini-games passed
-        const all3Passed = 
-          newRecords['bead_driller']?.passed &&
-          newRecords['tide_dock']?.passed &&
-          newRecords['seal_match']?.passed;
-
         set({
           miniGameRecords: newRecords,
           gyaan: state.gyaan + gyaanBonus,
@@ -537,18 +591,8 @@ export const useGameStore = create<GameState>()(
           isPaused: true
         });
 
-        // Advance quest if appropriate
-        if (gameId === 'bead_driller' && state.activeQuest?.currentStepIndex === 1) {
-          get().advanceQuestStep();
-        } else if (gameId === 'tide_dock' && state.activeQuest?.currentStepIndex === 3) {
-          get().advanceQuestStep();
-        } else if (gameId === 'seal_match' && state.activeQuest?.currentStepIndex === 4) {
-          get().advanceQuestStep();
-        }
-
-        if (all3Passed && state.activeQuest?.currentStepIndex === 4) {
-          get().advanceQuestStep(); // moves to step 5 (cargo decision)
-        }
+        // Passing a mini-game completes its quest step (now, or when the quest reaches it)
+        set((s) => ({ activeQuest: progressQuest(s.activeQuest, s) }));
       },
 
       failMiniGame: (_gameId: string) => {
@@ -562,7 +606,7 @@ export const useGameStore = create<GameState>()(
         } else {
           set({
             urja: newUrja,
-            isLowUrja: newUrja < 25,
+            isLowUrja: newUrja < LOW_URJA_THRESHOLD,
             isPaused: true,
             companionMood: 'alert',
             companionMessage: state.language === 'en'
@@ -624,10 +668,7 @@ export const useGameStore = create<GameState>()(
 
         get().addItem(receiveItemId, receiveAmount, 'food');
 
-        // Check quest advance
-        if (state.activeQuest?.currentStepIndex === 2) {
-          get().advanceQuestStep();
-        }
+        set((s) => ({ activeQuest: progressQuest(s.activeQuest, s, QUEST_STEP.BARTER) }));
 
         set({
           companionMood: 'happy',
@@ -637,6 +678,11 @@ export const useGameStore = create<GameState>()(
         });
 
         return true;
+      },
+
+      talkToNpc: (npcId: string) => {
+        if (npcId !== 'npc_bead_artisan') return;
+        set((s) => ({ activeQuest: progressQuest(s.activeQuest, s, QUEST_STEP.MEET_SOMENDRA) }));
       },
 
       advanceQuestStep: () => {
@@ -697,26 +743,13 @@ export const useGameStore = create<GameState>()(
             : 'Cargo dispatched!'
         });
 
-        if (state.activeQuest?.currentStepIndex === 5) {
-          get().advanceQuestStep();
-        }
+        set((s) => ({ activeQuest: progressQuest(s.activeQuest, s, QUEST_STEP.CARGO_DECISION) }));
       },
 
-      openToyModal: (toyId: string) => {
-        set({
-          activeToyId: toyId,
-          activeScreen: 'toy_modal',
-          isPaused: true
-        });
-      },
-
-      closeToyModal: () => {
-        set({
-          activeToyId: null,
-          activeScreen: 'kingdom',
-          isPaused: false
-        });
-      },
+      // The toy viewer is an overlay: it pauses gameplay via pushOverlay while mounted
+      // and leaves the current screen (kingdom, Kaal Ghar, ...) underneath it.
+      openToyModal: (toyId: string) => set({ activeToyId: toyId }),
+      closeToyModal: () => set({ activeToyId: null }),
 
       claimKaalShard: (kingdomId: string) => {
         const state = get();
@@ -762,9 +795,7 @@ export const useGameStore = create<GameState>()(
             : 'काल खंड प्राप्त! आपके लट्टू में समय ऊर्जा लौट आई है!'
         });
 
-        if (state.activeQuest && !state.activeQuest.isComplete) {
-          get().advanceQuestStep();
-        }
+        set((s) => ({ activeQuest: progressQuest(s.activeQuest, s, QUEST_STEP.KAAL_SHARD) }));
       },
 
       askCompanionHint: () => {
@@ -827,7 +858,7 @@ export const useGameStore = create<GameState>()(
         const newUrja = Math.max(1, state.urja - 3);
         set({
           urja: newUrja,
-          isLowUrja: newUrja < 25,
+          isLowUrja: newUrja < LOW_URJA_THRESHOLD,
           companionMessage: hint,
           companionMood: 'alert'
         });
@@ -842,37 +873,19 @@ export const useGameStore = create<GameState>()(
 
       resetGame: () => {
         set({
-          activeScreen: 'kaal_map',
-          currentKingdomId: 'lothal',
-          urja: 100,
-          gyaan: 0,
-          isLowUrja: false,
-          isKaalThakaanTriggered: false,
-          isPaused: false,
-          playerPosition: { x: 320, y: 280, direction: 'S', isMoving: false },
-          inventory: INITIAL_INVENTORY,
-          activeQuest: INITIAL_QUEST,
-          cargoDecisions: {},
-          answeredQuestions: {},
-          activeCheckpointQuestionId: null,
-          activeNpcId: null,
-          activeMiniGameId: null,
-          miniGameRecords: {
-            bead_driller: { gameId: 'bead_driller', stars: 0, bestScore: 0, passed: false },
-            tide_dock: { gameId: 'tide_dock', stars: 0, bestScore: 0, passed: false },
-            seal_match: { gameId: 'seal_match', stars: 0, bestScore: 0, passed: false }
-          },
-          unlockedToys: ['toy_terracotta_bull'],
-          activeToyId: null,
-          kaalShards: [],
-          unlockedKingdoms: ['lothal'],
-          companionMessage: 'Welcome to Lothal! Ready to live the Katha?',
-          companionMood: 'happy'
+          ...createInitialProgress(),
+          journalEntries: [{ ...WELCOME_JOURNAL_ENTRY, timestamp: Date.now() }],
+          companionMessage: 'Welcome to Lothal! Ready to live the Katha?'
         });
       }
     }),
     {
       name: 'katha_kaal_yatri_save',
+      // isLowUrja is derived from urja and is not saved, so recompute it on load.
+      merge: (persisted, current) => {
+        const merged = { ...current, ...(persisted as Partial<GameState>) };
+        return { ...merged, isLowUrja: merged.urja < LOW_URJA_THRESHOLD };
+      },
       partialize: (state) => ({
         urja: state.urja,
         gyaan: state.gyaan,

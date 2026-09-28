@@ -2,15 +2,15 @@ import React from 'react';
 import { useGameStore } from '../../store/useGameStore';
 import foodsData from '../../content/foods.json';
 import { CheckCircle2, HelpCircle, X } from 'lucide-react';
+import { usePauseWhile } from '../../hooks/usePauseWhile';
 
 export const FoodFactCard: React.FC = () => {
   const activeFoodFactId = useGameStore((state) => state.activeFoodFactId);
   const closeFoodFact = useGameStore((state) => state.closeFoodFact);
   const language = useGameStore((state) => state.language);
 
-  if (!activeFoodFactId) return null;
-
-  const foodItem = foodsData.find((f) => f.id === activeFoodFactId);
+  const foodItem = activeFoodFactId ? foodsData.find((f) => f.id === activeFoodFactId) : undefined;
+  usePauseWhile(Boolean(foodItem));
   if (!foodItem) return null;
 
   const { foodFact } = foodItem;

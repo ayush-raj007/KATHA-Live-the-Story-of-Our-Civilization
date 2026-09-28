@@ -32,6 +32,11 @@
   --shadow-sm: 0 2px 4px rgba(44, 24, 16, 0.08);
   --shadow-md: 0 4px 12px rgba(44, 24, 16, 0.12);
   --shadow-lg: 0 8px 24px rgba(44, 24, 16, 0.18);
+
+  /* Layout: --hud-height is updated at runtime from the HUD's real height */
+  --hud-height: 64px;
+  --world-overlay-height: 104px; /* zone banner + minimap under the HUD */
+  --world-bottom-reserve: 160px; /* D-pad, companion bubble and action bar */
 }
 
 * {
@@ -47,6 +52,7 @@ body {
   color: var(--text-primary);
   overflow: hidden;
   height: 100vh;
+  height: 100dvh;
   width: 100vw;
 }
 
@@ -74,6 +80,7 @@ body {
   position: relative;
   width: 100vw;
   height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   background-color: #ECE3D2;
@@ -244,15 +251,6 @@ body {
   animation: companion-float 4s ease-in-out infinite;
 }
 
-@media (max-width: 768px) {
-  .companion-bubble {
-    bottom: 160px;
-    left: 16px;
-    right: 16px;
-    max-width: calc(100vw - 32px);
-  }
-}
-
 @keyframes companion-float {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-4px); }
@@ -407,4 +405,167 @@ body {
 .btn-secondary:hover {
   background: #FFF;
   border-color: var(--terracotta);
+}
+
+/* Missing keyframes referenced by inline styles (low-Urja badge, action bar) */
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ---------- Screen layout relative to the HUD ---------- */
+.screen-below-hud {
+  padding-top: var(--hud-height);
+}
+
+.world-overlay-top {
+  top: calc(var(--hud-height) + 8px);
+}
+
+.world-canvas-box {
+  position: absolute;
+  left: 2vw;
+  right: 2vw;
+  top: calc(var(--hud-height) + var(--world-overlay-height) + 8px);
+  bottom: var(--world-bottom-reserve);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.world-action-bar {
+  bottom: 76px;
+  max-width: calc(100vw - 32px);
+}
+
+.world-dpad {
+  bottom: 24px;
+  left: 24px;
+  grid-template-columns: repeat(3, 40px);
+  grid-template-rows: repeat(3, 40px);
+}
+
+.kaal-map-aside {
+  width: 380px;
+  overflow-y: auto;
+}
+
+/* Scrollable content can always be scrolled clear of the companion bubble */
+.clear-of-companion {
+  padding-bottom: 150px !important;
+}
+
+/* ---------- Tablets / small laptops ---------- */
+@media (max-width: 1100px) {
+  .hud-header {
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+
+  /* Icon-only nav buttons (each has a title tooltip) */
+  .nav-pill-btn {
+    padding: 8px 10px;
+  }
+  .nav-pill-btn span {
+    display: none;
+  }
+
+  /* Quest tracker gets its own row instead of being squeezed */
+  .quest-tracker-card {
+    order: 3;
+    flex: 1 1 100%;
+    max-width: none;
+  }
+
+  /* Keep the map's enter button above the companion bubble */
+  .kaal-map-aside {
+    padding-bottom: 150px !important;
+  }
+}
+
+/* ---------- Phones ---------- */
+@media (max-width: 700px) {
+  .kaal-map-body {
+    flex-direction: column;
+    overflow-y: auto !important;
+  }
+  .kaal-map-body > div:first-child {
+    flex: 0 0 45%;
+  }
+  .kaal-map-aside {
+    width: 100%;
+    flex: 1 0 auto;
+    border-left: none !important;
+    border-top: 3px solid var(--earth-border);
+    padding: 16px 16px 150px !important;
+  }
+}
+
+@media (max-width: 600px) {
+  :root {
+    --world-overlay-height: 40px;
+    --world-bottom-reserve: 230px;
+  }
+
+  .hud-header {
+    top: 8px;
+    left: 8px;
+    right: 8px;
+  }
+  .hud-section {
+    gap: 6px;
+  }
+  .urja-container,
+  .gyaan-container {
+    padding: 4px 8px;
+  }
+  .urja-bar-outer {
+    width: 64px;
+  }
+  .gyaan-label,
+  .quest-step-text {
+    display: none;
+  }
+
+  .world-minimap {
+    display: none;
+  }
+  .world-action-bar {
+    bottom: 164px;
+  }
+  .world-dpad {
+    bottom: 12px;
+    left: 12px;
+    grid-template-columns: repeat(3, 36px);
+    grid-template-rows: repeat(3, 36px);
+  }
+
+  /* Companion sits beside the D-pad and shows at most 3 lines */
+  .companion-bubble {
+    bottom: 12px;
+    left: 136px;
+    right: 8px;
+    max-width: none;
+  }
+  .companion-avatar-btn {
+    display: none;
+  }
+  .companion-speech p {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .modal-overlay {
+    padding: 10px;
+  }
+  .modal-content-card {
+    padding: 16px;
+  }
 }
